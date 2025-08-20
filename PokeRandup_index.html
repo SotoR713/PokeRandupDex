@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PokeRandup – Pokédex</title>
+
+    <!-- Tailwind CDN (para los estilos de las clases que ya usa la app) -->
+    <script src=" https://cdn.tailwindcss.com">
+    </script>
+
+    <!-- React 18 UMD + ReactDOM 18 UMD (compatibles con abrir el archivo localmente) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- Babel Standalone para compilar JSX en el navegador (sin build) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      html,
+      body,
+      #root {
+        height: 100%
+      }
+    </style>
+</head>
+
+<body class="min-h-screen bg-gray-50">
+  <div id="root"></div>
+
+  <!-- Tu aplicación completa en JSX, compilada por Babel al vuelo. No usa import.meta ni bundlers. -->
+  <script type="text/babel">
+    const { useEffect, useMemo, useRef, useState } = React;
+
+    // =====================================
+    // PokeRandup – Pokédex completa (sin RRD)
+    // =====================================
+    // - Router por hash (#/ y #/pokemon/:id) para evitar `import.meta`
+    // - Tarjetas con formato base que cambia por tipo (color, borde, fondo sólido)
+    // - Búsqueda con sugerencias en vivo (autocompletar)
+    // - Vista de detalle: estadísticas numéricas + barras, habilidades (EN + ES + descripción),
+    //   medidas, línea evolutiva y fortalezas/debilidades (efectividades por tipo)
+    // - Equipo Pokémon: construir equipo (hasta 6), ver debilidades/resistencias/inmunidades del equipo
+    // - Estilos con Tailwind y acentos inspirados en Pokémon
+    // - Pruebas básicas en consola
+
+    // =============== Utilidades ===============
+    function titleCase(name) {
+      return (name || "").replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+    function getIdFromUrl(url) {
+      const m = (url || "").match(/\/pokemon\/(\d+)\/?$/);
+      return m ? Number(m[1]) : null;
+    }
+    function artUrlById(id) {
+      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+    }
+    function fallbackSpriteById(id) {
+      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+    }
+
+    // Colores por tipo (aprox. oficiales)
+    const TYPE_COLORS = {
+      normal: "#A8A77A",
+      fire: "#EE8130",
+      water: "#6390F0",
+      electric: "#F7D02C",
+      grass: "#7AC74C",
+      ice: "#96D9D6",
+      fighting: "#C22E28",
+      poison: "#A33EA1",
+      ground: "#E2BF65",
+      flying: "#A98FF3",
+      psychic: "#F95587",
+      bug: "#A6B91A",
+      rock: "#B6A136",
+      ghost: "#735797",
+      dragon: "#6F35FC",
+      dark: "#705746",
+      steel: "#B7B7CE",
+      fairy: "#D685AD",
+    };
+    const TYPE_ES = {
+      normal: "Normal", fire: "Fuego", water: "Agua", electric: "Eléctrico", grass: "Planta", ice: "Hielo",
+      fighting: "Lucha", poison: "Veneno", ground: "Tierra", flying: "Volador", psychic: "Psíquico",
+      bug: "Bicho", rock: "Roca", ghost: "Fantasma", dragon: "Dragón", dark: "Siniestro", steel: "Acero", fairy: "Hada"
+    };
+    const ALL_TYPES = Object.keys(TYPE_COLORS);
+
+    function TypeBadge({ type, label, children }) {
+      const color = TYPE_COLORS[type] || "#999";
+      return (
+        <span
+          className="px-2 py-0.5 text-xs rounded-full text-white shadow whitespace-nowrap"
+          style={{ backgroundColor: color }}
+        >
+          {label ?? TYPE_ES[type] ?? titleCase(type)}{children}
+        </span>
+      );
+    }
+
+    // =============== Efectividades (defensa) ===============
+    async function fetchDefenseMultipliers(typeNames) {
+      const mult = Object.fromEntries(ALL_TYPES.map((t) => [t, 1]));
+      for (const t of typeNames) {
+        const data = await fetch(`https://pokeapi.co/api/v2/type/${t}`).then((r) => r.json());
+        const rel = data.damage_relations || {};
+        (rel.double_damage_from || []).forEach((x) => (mult[x.name] *= 2));
+        (rel.half_damage_from || []).forEach((x) => (mult[x.name] *= 0.5));
+        (rel.no_damage_from || []).forEach((x) => (mult[x.name] *= 0));
+      }
+      return mult;
+    }
+
+    // =============== Habilidades (ES + EN + descripción) ===============
+    async function fetchAbilityDetail(url) {
+      const d = await fetch(url).then((r) => r.json());
+      const name_en = (d.names || []).find((n) => n.language?.name === "en")?.name || d.name;
+      const name_es = (d.names || []).find((n) => n.language?.name === "es")?.name || name_en;
+      const flavor_es = (d.flavor_text_entries || []).find((e) => e.language?.name === "es")?.flavor_text;
+      const effect_en = (d.effect_entries || []).find((e) => e.language?.name === "en")?.short_effect ||
+        (d.effect_entries || []).find((e) => e.language?.name === "en")?.effect;
+      const description = (flavor_es || effect_en || "Sin descripción disponible").replace(/\s+/g, " ");
+      return { name_en, name_es, description };
+    }
+
+    // =============== Router por hash ===============
+    function parseRoute(hash) {
+      const h = (hash || "").replace(/^#/, "");
+      if (h === "" || h === "/") return { name: "home" };
+      const m = h.match(/^\/?pokemon\/(\d+)\/?$/);
+      if (m) return { name: "pokemon", id: Number(m[1]) };
+      return { name: "home" };
+    }
+
+    // =============== App raíz ===============
+    function PokeRandupApp() {
+      const [route, setRoute] = useState(() => parseRoute(window.location.hash));
+      const [team, setTeam] = useState(() => {
+        try { return JSON.parse(localStorage.getItem("pokerandup_team") || "[]"); } catch { return []; }
+      });
+      const [teamDefense, setTeamDefense] = useState(null);
+
+      useEffect(() => {
+        const onHash = () => setRoute(parseRoute(window.location.hash));
+        window.addEventListener("hashchange", onHash);
+        return () => window.removeEventListener("hashchange", onHash);
+      }, []);
+
+      useEffect(() => { try { localStorage.setItem("pokerandup_team", JSON.stringify(team)); } catch { } }, [team]);
+
+      useEffect(() => {
+        let cancelled = false;
+        (async () => {
+          const counts = { weak: Object.fromEntries(ALL_TYPES.map(t => [t, 0])), resist: Object.fromEntries(ALL_TYPES.map(t => [t, 0])), immune: Object.fromEntries(ALL_TYPES.map(t => [t, 0])) };
+          for (const member of team) {
+            const mult = await fetchDefenseMultipliers(member.types);
+            for (const t of ALL_TYPES) {
+              const m = mult[t];
+              if (m === 0) counts.immune[t]++;
+              else if (m > 1) counts.weak[t]++;
+              else if (m < 1) counts.resist[t]++;
+            }
+          }
+          if (!cancelled) setTeamDefense(counts);
+        })();
+        return () => { cancelled = true; };
+      }, [team]);
+
+      function addToTeam(p) {
+        setTeam((prev) => {
+          if (prev.find((x) => x.id === p.id) || prev.length >= 6) return prev;
+          const entry = { id: p.id, name: p.name, image: p.image || artUrlById(p.id), types: p.types || [] };
+          return [...prev, entry];
+        });
+      }
+      function removeFromTeam(id) { setTeam((prev) => prev.filter((x) => x.id !== id)); }
+      function clearTeam() { setTeam([]); }
+
+      return (
+        <div className="min-h-screen bg-gray-50 text-gray-800">
+          <Header teamCount={team.length} />
+          <main className="max-w-7xl mx-auto px-4 py-4 md:py-6">
+            {route.name === "home" ? (
+              <PokedexPage addToTeam={addToTeam} team={team} teamDefense={teamDefense} removeFromTeam={removeFromTeam} clearTeam={clearTeam} />
+            ) : (
+              <PokemonDetailPage id={route.id} addToTeam={addToTeam} />
+            )}
+          </main>
+          <Footer />
+        </div>
+      );
+    }
+
+    function Header({ teamCount }) {
+      return (
+        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-gray-200"
+        style={{background: "linear-gradient(45deg, #A8A77A, #EE8130, #6390F0, #F7D02C, #7AC74C, #96D9D6, #C22E28, #A33EA1, #E2BF65, #A98FF3, #F95587, #A6B91A, #B6A136, #735797, #6F35FC, #705746, #B7B7CE, #D685AD)"
+       }}>
+          
+          <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <a href="#/" className="inline-flex items-center gap-2">
+              <LogoIcon />
+              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+                <span className="text-[#D62828]"style={{ fontWeight: "bold", fontSize: "50px", color: "#ffcb05", WebkitTextStroke: "3px #2a75bb", textShadow: "2px 2px 6px rgba(0,0,0,0.5)" }}>Poke</span>
+                <span className="text-[#003049]"style={{ fontWeight: "bold", fontSize: "50px", color: "#2a75bb", WebkitTextStroke: "1px #ffcb05", textShadow: "2px 2px 6px rgba(0,0,0,0.5)" }}>Rand</span>
+                <span className="text-[#F77F00]"style={{ fontWeight: "bold", fontSize: "50px", color: "#ffcb05", WebkitTextStroke: "3px #2a75bb", textShadow: "2px 2px 6px rgba(0,0,0,0.5)" }}>Up</span>
+             
+             
+             
+                </h1>
+            </a>
+            <div className="text-xs text-gray-600 flex items-center gap-3">
+              <a href="#/" className="rounded-full px-3 py-1 border border-gray-300 hover:bg-gray-50 text-sm">Pokédex</a>
+              <span className="rounded-full px-3 py-1 bg-[#003049] text-white text-sm">Equipo {teamCount}/6</span>
+              <span className="text-gray-400"></span>
+            </div>
+          </div>
+        </header>
+      );
+    }
+
+    function Footer() {
+      return (
+        <footer className="max-w-7xl mx-auto px-4 pb-8 pt-2 text-xs text-gray-500">
+        <span>
+          Esta aplicación ha sido desarrollada principalmente con la asistencia de ChatGPT (90%), junto con aportes de SotoR713 (5%) y CeszarW (5%), con fines exclusivamente recreativos y educativos. No está afiliada oficialmente a Pokémon ni a Nintendo. El uso comercial de esta aplicación está estrictamente prohibido.
+        </span>
+          <br />
+          <span className="text-gray-400">© 2025 PokeRandup</span> 
+        </footer>
+      );
+    }
+
+    function LogoIcon() {
+      return (
+        <div className="w-8 h-8 rounded-full grid place-items-center" style={{ background: "linear-gradient(135deg,#D62828,#F77F00)" }}>
+          <div className="w-3 h-3 rounded-full bg-[#003049]"></div>
+        </div>
+      );
+    }
+
+    // =============== Página: Pokédex ===============
+    function PokedexPage({ addToTeam, team, teamDefense, removeFromTeam, clearTeam }) {
+      const PAGE_SIZE_OPTIONS = [24, 48, 72, 120];
+      const [pageSize, setPageSize] = useState(48);
+      const [totalCount, setTotalCount] = useState(0);
+      const [page, setPage] = useState(1);
+      const [listLoading, setListLoading] = useState(false);
+      const [error, setError] = useState("");
+
+      const [query, setQuery] = useState("");
+      const [searchLoading, setSearchLoading] = useState(false);
+      const [searchResult, setSearchResult] = useState(null);
+      const [suggestions, setSuggestions] = useState([]);
+      const [nameIndex, setNameIndex] = useState([]);
+      const abortRef = useRef(null);
+      const debounceRef = useRef(null);
+
+      const [items, setItems] = useState([]);
+
+      useEffect(() => {
+        let cancelled = false;
+        (async () => {
+          try {
+            const r = await fetch("https://pokeapi.co/api/v2/pokemon?limit=1");
+            const d = await r.json();
+            if (!cancelled) setTotalCount(d.count || 1025);
+          } catch (e) {
+            if (!cancelled) setTotalCount(1025);
+          }
+          try {
+            const all = await fetch("https://pokeapi.co/api/v2/pokemon?limit=20000").then((x) => x.json());
+            const idx = (all.results || []).map((p) => ({ name: p.name, id: getIdFromUrl(p.url) }));
+            if (!cancelled) setNameIndex(idx);
+          } catch { }
+        })();
+        return () => { cancelled = true; };
+      }, []);
+
+      const maxPage = useMemo(() => Math.max(1, Math.ceil((totalCount || 1) / pageSize)), [totalCount, pageSize]);
+
+      useEffect(() => {
+        if (!totalCount) return;
+        const offset = (page - 1) * pageSize;
+        const url = `https://pokeapi.co/api/v2/pokemon?limit=${pageSize}&offset=${offset}`;
+        let cancelled = false;
+        setListLoading(true);
+        setError("");
+
+        (async () => {
+          try {
+            const base = await fetch(url).then((r) => r.json());
+            const results = base.results || [];
+            const details = await Promise.all(
+              results.map(async (it) => {
+                const d = await fetch(it.url).then((r) => r.json());
+                const id = d.id;
+                const image = d.sprites?.other?.["official-artwork"]?.front_default || artUrlById(id);
+                const types = (d.types || []).map((t) => t.type.name);
+                const abilities = (d.abilities || []).map((a) => a.ability.name);
+                const bst = (d.stats || []).reduce((acc, s) => acc + (s.base_stat || 0), 0);
+                const base_experience = d.base_experience;
+                return { id, name: d.name, image, types, abilities, bst, height: d.height, weight: d.weight, base_experience };
+              })
+            );
+            if (!cancelled) setItems(details);
+          } catch (e) {
+            if (!cancelled) setError("No se pudo cargar la lista.");
+          } finally {
+            if (!cancelled) setListLoading(false);
+          }
+        })();
+
+        return () => { cancelled = true; };
+      }, [totalCount, page, pageSize]);
+
+      useEffect(() => {
+        if (!query) { setSuggestions([]); return; }
+        clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+          const q = query.toLowerCase();
+          const first = nameIndex.filter((p) => p.name.includes(q) || String(p.id) === q).slice(0, 10);
+          setSuggestions(first);
+        }, 200);
+        return () => clearTimeout(debounceRef.current);
+      }, [query, nameIndex]);
+
+      async function handleSearch(e) {
+        e?.preventDefault?.();
+        const q = (query || "").trim().toLowerCase();
+        if (!q) { setSearchResult(null); return; }
+        try {
+          setSearchLoading(true);
+          setError("");
+          abortRef.current?.abort?.();
+          const controller = new AbortController();
+          abortRef.current = controller;
+          const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(q)}`, { signal: controller.signal });
+          if (!r.ok) throw new Error("No encontrado");
+          const d = await r.json();
+          setSearchResult({
+            id: d.id,
+            name: d.name,
+            image: d.sprites?.other?.["official-artwork"]?.front_default || artUrlById(d.id),
+            types: d.types.map((t) => t.type.name),
+            abilities: d.abilities.map((a) => a.ability.name),
+            bst: d.stats.reduce((acc, s) => acc + (s.base_stat || 0), 0),
+            height: d.height,
+            weight: d.weight,
+            base_experience: d.base_experience,
+          });
+        } catch (e) {
+          setSearchResult(null);
+          setError("No encontré ese Pokémon. Prueba con el nombre en inglés o un ID (1–1025+). ");
+        } finally {
+          setSearchLoading(false);
+        }
+      }
+
+      function clearSearch() {
+        setQuery("");
+        setSearchResult(null);
+        setError("");
+        setSuggestions([]);
+      }
+
+      function goPage(p) { setPage((prev) => Math.min(Math.max(1, p), maxPage)); }
+
+      return (
+        <>
+          {/* Buscar */}
+          <section className="mb-4 md:mb-6 bg-white rounded-2xl shadow p-3 md:p-4 relative">
+            <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-2 md:items-center">
+              <div className="relative flex-1 md:w-96">
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar por nombre o ID (ej. pikachu, 25)"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-[#D62828]"
+                />
+                {/* Sugerencias */}
+                {suggestions.length > 0 && (
+                  <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow max-h-60 overflow-auto">
+                    {suggestions.map((sug) => (
+                      <button
+                        key={sug.id}
+                        type="button"
+                        onClick={() => { setQuery(String(sug.id)); setSuggestions([]); }}
+                        className="w-full text-left px-3 py-2 hover:bg-gray-50 flex justify-between text-sm"
+                      >
+                        <span>{titleCase(sug.name)}</span>
+                        <span className="text-gray-500">#{sug.id}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button type="submit" className="px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-100">Buscar</button>
+                <button type="button" onClick={clearSearch} className="px-3 py-2 rounded-xl border border-gray-200 hover:bg-gray-100">Limpiar</button>
+              </div>
+            </form>
+            {searchLoading && <p className="mt-2 text-sm text-gray-500 animate-pulse">Buscando…</p>}
+            {searchResult && (
+              <div className="mt-4">
+                <h2 className="text-lg font-semibold mb-3">Resultado</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  <PokemonCard data={searchResult} onAdd={addToTeam} />
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Equipo */}
+          <TeamBuilder team={team} teamDefense={teamDefense} removeFromTeam={removeFromTeam} clearTeam={clearTeam} />
+
+          {/* Controles y paginación */}
+          <section className="mb-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Por página:</span>
+              <select className="px-3 py-2 rounded-xl border border-gray-300" value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}>
+                {PAGE_SIZE_OPTIONS.map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => goPage(1)} className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100" disabled={page === 1}>« Primero</button>
+              <button onClick={() => goPage(page - 1)} className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100" disabled={page === 1}>‹ Anterior</button>
+              <span className="text-sm text-gray-600 px-2">Página <b>{page}</b> de <b>{maxPage}</b></span>
+              <button onClick={() => goPage(page + 1)} className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100" disabled={page === maxPage}>Siguiente ›</button>
+              <button onClick={() => goPage(maxPage)} className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100" disabled={page === maxPage}>Último »</button>
+            </div>
+          </section>
+
+          {/* Lista */}
+          <section className="rounded-2xl bg-white shadow p-3 md:p-4">
+            {error && <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700">{error}</div>}
+            {listLoading ? (
+              <div className="py-8 text-center animate-pulse">Cargando Pokédex…</div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
+                {items.map((it) => <PokemonCard key={it.id} data={it} onAdd={addToTeam} />)}
+              </div>
+            )}
+          </section>
+        </>
+      );
+    }
+
+    function TeamBuilder({ team, teamDefense, removeFromTeam, clearTeam }) {
+      const teamLen = team.length;
+      const dangerTypes = React.useMemo(() => {
+        if (!teamDefense || teamLen === 0) return [];
+        const threshold = Math.ceil(teamLen / 2);
+        return ALL_TYPES
+          .map((t) => ({ t, count: teamDefense.weak[t] }))
+          .filter((x) => x.count >= threshold)
+          .sort((a, b) => b.count - a.count);
+      }, [teamDefense, teamLen]);
+
+      const coverageTypes = React.useMemo(() => {
+        if (!teamDefense || teamLen === 0) return [];
+        return ALL_TYPES
+          .map((t) => ({ t, resist: teamDefense.resist[t], immune: teamDefense.immune[t] }))
+          .filter((x) => x.resist + x.immune >= Math.ceil(teamLen / 2))
+          .sort((a, b) => b.resist + b.immune - (a.resist + a.immune));
+      }, [teamDefense, teamLen]);
+
+      return (
+        <section className="mb-4 md:mb-6 rounded-2xl bg-white shadow p-3 md:p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Mi equipo ({teamLen}/6)</h2>
+            <div className="flex gap-2">
+              <button onClick={clearTeam} className="px-3 py-1.5 rounded-xl border border-gray-300 hover:bg-gray-100 text-sm">Limpiar equipo</button>
+            </div>
+          </div>
+
+          {/* Slots */}
+          <div className="mt-3 grid grid-cols-3 sm:grid-cols-6 gap-3">
+            {Array.from({ length: 6 }).map((_, i) => {
+              const m = team[i];
+              if (!m) return <div key={i} className="aspect-square rounded-xl border border-dashed grid place-items-center text-gray-400">Vacío</div>;
+              const color = TYPE_COLORS[m.types[0]] || "#ddd";
+              return (
+                <div key={m.id} className="relative aspect-square rounded-xl border overflow-hidden" style={{ borderColor: color, backgroundColor: `${color}22` }}>
+                  {/* eslint-disable-next-line jsx-a11y/alt-text */}
+                  <img src={artUrlById(m.id)} onError={(e) => e.currentTarget.src = fallbackSpriteById(m.id)} className="w-full h-full object-contain p-2" />
+                  <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between text-[11px]">
+                    <span className="px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: color }}>{titleCase(m.name)}</span>
+                    <button onClick={() => removeFromTeam(m.id)} className="px-1.5 py-0.5 rounded bg-white/90 border text-gray-700">Quitar</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Resumen defensivo del equipo */}
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <h3 className="font-semibold mb-2">Puntos débiles (≥ mitad del equipo)</h3>
+              {!teamDefense || dangerTypes.length === 0 ? (
+                <p className="text-sm text-gray-600">Sin debilidades críticas.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {dangerTypes.map(({ t, count }) => (
+                    <TypeBadge key={`d-${t}`} type={t} label={`${TYPE_ES[t]} • ${count}/${teamLen}`} />
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Coberturas (≥ mitad resiste/inmune)</h3>
+              {!teamDefense || coverageTypes.length === 0 ? (
+                <p className="text-sm text-gray-600">Cobertura neutral.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {coverageTypes.map(({ t, resist, immune }) => (
+                    <TypeBadge key={`c-${t}`} type={t} label={`${TYPE_ES[t]} • R${resist}/I${immune}`} />
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Resumen por tipo</h3>
+              {!teamDefense ? (
+                <p className="text-sm text-gray-600">—</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {ALL_TYPES.map((t) => (
+                    <div key={`s-${t}`} className="text-xs flex items-center justify-between px-2 py-1 rounded border" style={{ borderColor: TYPE_COLORS[t] }}>
+                      <span className="font-medium" style={{ color: TYPE_COLORS[t] }}>{TYPE_ES[t]}</span>
+                      <span className="text-gray-700">D{teamDefense.weak[t]} / R{teamDefense.resist[t]} / I{teamDefense.immune[t]}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function PokemonCard({ data, onAdd }) {
+      const { id, name, image, types = [], abilities = [], bst, height, weight, base_experience } = data;
+      const primary = types[0] || "normal";
+      const color = TYPE_COLORS[primary] || "#ddd";
+      return (
+        <a href={`#/pokemon/${id}`} className="group relative overflow-hidden rounded-2xl border bg-white hover:shadow-md transition" style={{ borderColor: color }}>
+          {onAdd && (
+            <button
+              title="Añadir al equipo"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onAdd({ id, name, image, types }); }}
+              className="absolute top-2 right-2 z-10 px-2 py-1 rounded-lg text-sm font-semibold text-white"
+              style={{ backgroundColor: color }}
+            >
+              + Equipo
+            </button>
+          )}
+          <div className="aspect-square grid place-items-center p-2" style={{ backgroundColor: `${color}22` }}>
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
+            <img src={image} onError={(e) => (e.currentTarget.src = fallbackSpriteById(id))} loading="lazy" className="max-h-40 object-contain" />
+          </div>
+          <div className="p-3">
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] tracking-widest text-gray-500">#{String(id).padStart(4, "0")}</div>
+              <div className="text-[10px] font-semibold" style={{ color: color }}>BST {bst}</div>
+            </div>
+            <div className="font-semibold text-gray-900 flex items-center gap-2">
+              <span>{titleCase(name)}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">EXP {base_experience}</span>
+            </div>
+            <div className="mt-1 flex flex-wrap gap-1">
+              {types.map((t) => <TypeBadge key={t} type={t} />)}
+            </div>
+            <div className="mt-2 text-[11px] text-gray-600 flex items-center gap-3">
+              <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }}></span>{abilities.length} hab.</span>
+              <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>{height / 10} m</span>
+              <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>{weight / 10} kg</span>
+            </div>
+          </div>
+        </a>
+      );
+    }
+
+    function PokemonDetailPage({ id, addToTeam }) {
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState("");
+      const [pokemon, setPokemon] = useState(null);
+      const [evoChain, setEvoChain] = useState([]);
+      const [multipliers, setMultipliers] = useState(null);
+      const [abilityDetails, setAbilityDetails] = useState([]);
+
+      useEffect(() => {
+        let cancelled = false;
+        (async () => {
+          try {
+            setLoading(true);
+            setError("");
+            const d = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then((r) => r.json());
+            if (cancelled) return;
+            setPokemon(d);
+
+            const species = await fetch(d.species.url).then((r) => r.json());
+            if (cancelled) return;
+            const evoUrl = species.evolution_chain?.url;
+            if (evoUrl) {
+              const chain = await fetch(evoUrl).then((r) => r.json());
+              const seq = [];
+              function walk(node) {
+                if (!node) return;
+                const m = node.species?.url?.match(/\/pokemon-species\/(\d+)\/?$/);
+                const sid = m ? Number(m[1]) : null;
+                seq.push({ id: sid, name: node.species?.name });
+                (node.evolves_to || []).forEach(walk);
+              }
+              walk(chain.chain);
+              if (!cancelled) setEvoChain(seq);
+            } else if (!cancelled) {
+              setEvoChain([]);
+            }
+
+            const typeNames = d.types.map((t) => t.type.name);
+            const mult = await fetchDefenseMultipliers(typeNames);
+            if (!cancelled) setMultipliers(mult);
+
+            const abilityPromises = (d.abilities || []).map(async (a) => fetchAbilityDetail(a.ability.url));
+            const details = await Promise.all(abilityPromises);
+            if (!cancelled) setAbilityDetails(details);
+          } catch (e) {
+            if (!cancelled) setError("No se pudo cargar el Pokémon.");
+          } finally {
+            if (!cancelled) setLoading(false);
+          }
+        })();
+        return () => { cancelled = true; };
+      }, [id]);
+
+      if (loading) return <div className="py-16 text-center animate-pulse">Cargando…</div>;
+      if (error) return <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700">{error}</div>;
+      if (!pokemon) return null;
+
+      const pid = pokemon.id;
+      const name = pokemon.name;
+      const image = pokemon.sprites?.other?.["official-artwork"]?.front_default || artUrlById(pid);
+      const types = pokemon.types.map((t) => t.type.name);
+      const abilities = pokemon.abilities.map((a) => a.ability.name);
+      const stats = pokemon.stats.map((s) => ({ name: s.stat.name, value: s.base_stat }));
+      const heightM = pokemon.height / 10;
+      const weightKg = pokemon.weight / 10;
+
+      const weak = [], resist = [], immune = [];
+      if (multipliers) {
+        for (const t of ALL_TYPES) {
+          const m = multipliers[t];
+          if (m === 0) immune.push([t, m]);
+          else if (m > 1) weak.push([t, m]);
+          else if (m < 1) resist.push([t, m]);
+        }
+        weak.sort((a, b) => b[1] - a[1]);
+        resist.sort((a, b) => a[1] - b[1]);
+      }
+
+      return (
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+          <section className="xl:col-span-2 rounded-2xl bg-white shadow p-4 flex flex-col gap-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="text-sm text-gray-500">#{String(pid).padStart(4, "0")}</div>
+                <h2 className="text-2xl font-extrabold">{titleCase(name)}</h2>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {types.map((t) => <TypeBadge key={t} type={t} label={TYPE_ES[t]} />)}
+                </div>
+              </div>
+              <div className="text-right text-sm text-gray-600">
+                <div><b>Altura:</b> {heightM} m</div>
+                <div><b>Peso:</b> {weightKg} kg</div>
+              </div>
+            </div>
+            <div className="grid place-items-center bg-white rounded-xl" style={{ background: "linear-gradient(135deg,#ffffff,#f5f7ff)" }}>
+              {/* eslint-disable-next-line jsx-a11y/alt-text */}
+              <img src={image} onError={(e) => (e.currentTarget.src = fallbackSpriteById(pid))} className="w-full max-w-md object-contain" />
+            </div>
+            <div className="flex justify-end">
+              <button onClick={() => addToTeam({ id: pid, name, image, types })} className="px-4 py-2 rounded-xl text-white" style={{ backgroundColor: TYPE_COLORS[types[0]] || '#003049' }}>Añadir al equipo</button>
+            </div>
+          </section>
+
+          <section className="xl:col-span-3 grid grid-cols-1 gap-6">
+            <div className="rounded-2xl bg-white shadow p-4">
+              <h3 className="text-lg font-semibold mb-3">Estadísticas base</h3>
+              <div className="space-y-2">
+                {stats.map((s) => (
+                  <div key={s.name} className="grid grid-cols-5 gap-2 items-center">
+                    <div className="col-span-2 text-sm font-medium text-gray-700">{titleCase(s.name.replace(/-/g, " "))}</div>
+                    <div className="col-span-2 h-3 bg-gray-100 rounded"><div className="h-3 rounded" style={{ width: `${Math.min(100, (s.value / 180) * 100)}%`, background: "linear-gradient(90deg,#003049,#F77F00)" }}></div></div>
+                    <div className="text-sm text-gray-800 font-semibold tabular-nums text-right">{s.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-white shadow p-4">
+              <h3 className="text-lg font-semibold mb-3">Fortalezas y Debilidades (Defensa)</h3>
+              {!multipliers ? (
+                <p className="text-sm text-gray-600">Calculando…</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <h4 className="font-semibold mb-2">Debilidades</h4>
+                    {weak.length === 0 ? <p className="text-sm text-gray-600">Ninguna</p> : (
+                      <div className="flex flex-wrap gap-2">{weak.map(([t, m]) => <TypeBadge key={`w-${t}`} type={t} label={`${TYPE_ES[t]} x${m}`} />)}</div>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">Resistencias</h4>
+                    {resist.length === 0 ? <p className="text-sm text-gray-600">Ninguna</p> : (
+                      <div className="flex flex-wrap gap-2">{resist.map(([t, m]) => <TypeBadge key={`r-${t}`} type={t} label={`${TYPE_ES[t]} x${m}`} />)}</div>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">Inmunidades</h4>
+                    {immune.length === 0 ? <p className="text-sm text-gray-600">Ninguna</p> : (
+                      <div className="flex flex-wrap gap-1.5">{immune.map(([t]) => <TypeBadge key={`i-${t}`} type={t} label={`${TYPE_ES[t]} x0`} />)}</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl bg-white shadow p-4">
+              <h3 className="text-lg font-semibold mb-3">Habilidades</h3>
+              {abilityDetails.length === 0 ? (
+                <p className="text-sm text-gray-600">Sin habilidades.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {abilityDetails.map((ab, idx) => (
+                    <li key={`${ab.name_en}-${idx}`} className="text-sm">
+                      <div className="font-semibold">{ab.name_es} <span className="text-gray-500">({ab.name_en})</span></div>
+                      <div className="text-gray-700 leading-snug">{ab.description}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="rounded-2xl bg-white shadow p-4">
+              <h3 className="text-lg font-semibold mb-3">Línea evolutiva</h3>
+              {evoChain.length === 0 ? (
+                <p className="text-sm text-gray-600">No disponible.</p>
+              ) : (
+                <div className="flex flex-wrap items-center gap-4">
+                  {evoChain.map((evo, idx) => (
+                    <React.Fragment key={`${evo.id}-${idx}`}>
+                      <a href={`#/pokemon/${evo.id}`} className="flex flex-col items-center gap-1 group">
+                        {/* eslint-disable-next-line jsx-a11y/alt-text */}
+                        <img src={artUrlById(evo.id)} onError={(e) => (e.currentTarget.src = fallbackSpriteById(evo.id))} className="w-20 h-20 object-contain" />
+                        <div className="text-xs font-medium">{titleCase(evo.name)}</div>
+                      </a>
+                      {idx < evoChain.length - 1 && <span className="text-gray-400">➜</span>}
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      );
+    }
+
+    // =============== Pruebas básicas (console) ===============
+    (function runTests() {
+      try {
+        let passed = 0, failed = 0;
+        const t1 = getIdFromUrl("https://pokeapi.co/api/v2/pokemon/25/") === 25; t1 ? passed++ : failed++;
+        const t2 = titleCase("special attack") === "Special Attack"; t2 ? passed++ : failed++;
+        const t3 = artUrlById(1).includes("official-artwork/1.png"); const t4 = fallbackSpriteById(1).endsWith("/pokemon/1.png"); (t3 && t4) ? passed++ : failed++;
+        const rHome = parseRoute("#/"); const rDet = parseRoute("#/pokemon/999"); const t5 = rHome.name === "home" && rDet.name === "pokemon" && rDet.id === 999; t5 ? passed++ : failed++;
+        const t6 = TYPE_ES.fire === "Fuego" && TYPE_ES.dark === "Siniestro"; t6 ? passed++ : failed++;
+        console.log(`PokeRandup tests → passed: ${passed}, failed: ${failed}`);
+      } catch (err) { console.warn("PokeRandup tests error:", err); }
+    })();
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<PokeRandupApp />);
+  </script>
+</body>
+
+</html>
