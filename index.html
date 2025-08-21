@@ -426,11 +426,11 @@
               </select>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => goPage(1)} className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100" disabled={page === 1}>« Primero</button>
-              <button onClick={() => goPage(page - 1)} className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100" disabled={page === 1}>‹ Anterior</button>
+              <button onClick={() => goPage(1)} className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100" disabled={page === 1}>«</button>
+              <button onClick={() => goPage(page - 1)} className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100" disabled={page === 1}>‹</button>
               <span className="text-sm text-gray-600 px-2">Página <b>{page}</b> de <b>{maxPage}</b></span>
-              <button onClick={() => goPage(page + 1)} className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100" disabled={page === maxPage}>Siguiente ›</button>
-              <button onClick={() => goPage(maxPage)} className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100" disabled={page === maxPage}>Último »</button>
+              <button onClick={() => goPage(page + 1)} className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100" disabled={page === maxPage}>›</button>
+              <button onClick={() => goPage(maxPage)} className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100" disabled={page === maxPage}>»</button>
             </div>
           </section>
 
@@ -757,8 +757,8 @@
                         {/* eslint-disable-next-line jsx-a11y/alt-text */}
                         <img src={artUrlById(evo.id)} onError={(e) => (e.currentTarget.src = fallbackSpriteById(evo.id))} className="w-20 h-20 object-contain" />
                         <div className="text-xs font-medium">{titleCase(evo.name)}</div>
-                      </a>
-                      {idx < evoChain.length - 1 && <span className="text-gray-400">➜</span>}
+                      </a><br/>
+                    
                     </React.Fragment>
                   ))}
                 </div>
