@@ -253,7 +253,7 @@
 
     // =============== Página: Pokédex (equipo arriba, buscador + filtros medio, lista al final) ===============
     function PokedexPage({ addToTeam, team, teamDefense, removeFromTeam, clearTeam }) {
-      const PAGE_SIZE_OPTIONS = [24, 48, 72, 120];
+         const PAGE_SIZE_OPTIONS = [24, 48, 72, 120, 144, 200, 300, 500,1000, 2000];
       const [pageSize, setPageSize] = useState(48);
       const [totalCount, setTotalCount] = useState(0);
       const [page, setPage] = useState(1);
