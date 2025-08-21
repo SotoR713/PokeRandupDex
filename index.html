@@ -417,11 +417,12 @@
           <TeamBuilder team={team} teamDefense={teamDefense} removeFromTeam={removeFromTeam} clearTeam={clearTeam} />
 
           {/* Controles y paginación */}
-<section className="mb-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-  <div className="flex items-center gap-2 w-full md:w-auto justify-center md:justify-start">
+<section className="mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+  {/* Por página */}
+  <div className="flex items-center gap-2 justify-center md:justify-start">
     <span className="text-sm text-gray-600">Por página:</span>
     <select
-      className="px-3 py-2 rounded-xl border border-gray-300"
+      className="h-10 px-3 rounded-xl border border-gray-300"
       value={pageSize}
       onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
     >
@@ -431,33 +432,33 @@
     </select>
   </div>
 
-  {/* Botonera: centrada en móvil, a la derecha en desktop */}
-  <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-center md:justify-end">
+  {/* Botonera */}
+  <div className="flex items-center gap-2 justify-center md:justify-end flex-nowrap overflow-x-auto md:overflow-visible">
     <button
       onClick={() => goPage(1)}
-      className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100 min-w-[90px] whitespace-nowrap"
+      className="h-10 px-3 rounded-xl border border-gray-300 hover:bg-gray-100"
       disabled={page === 1}
     >«</button>
 
     <button
       onClick={() => goPage(page - 1)}
-      className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100 min-w-[90px] whitespace-nowrap"
+      className="h-10 px-3 rounded-xl border border-gray-300 hover:bg-gray-100"
       disabled={page === 1}
     >‹</button>
 
-    <span className="text-sm text-gray-700 px-2 font-medium whitespace-nowrap">
-      Página <b>{page}</b> de <b>{maxPage}</b>
+    <span className="h-10 px-3 inline-flex items-center text-sm text-gray-700 font-medium whitespace-nowrap">
+      Página <b className="mx-1">{page}</b> de <b>{maxPage}</b>
     </span>
 
     <button
       onClick={() => goPage(page + 1)}
-      className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100 min-w-[90px] whitespace-nowrap"
+      className="h-10 px-3 rounded-xl border border-gray-300 hover:bg-gray-100"
       disabled={page === maxPage}
     >›</button>
 
     <button
       onClick={() => goPage(maxPage)}
-      className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100 min-w-[90px] whitespace-nowrap"
+      className="h-10 px-3 rounded-xl border border-gray-300 hover:bg-gray-100"
       disabled={page === maxPage}
     >»</button>
   </div>
