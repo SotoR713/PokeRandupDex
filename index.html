@@ -6,45 +6,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>PokeRandup – Pokédex</title>
 
-  <!-- Tailwind CDN (para los estilos de las clases que ya usa la app) -->
-  <script src=" https://cdn.tailwindcss.com">
-  </script>
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- React 18 UMD + ReactDOM 18 UMD (compatibles con abrir el archivo localmente) -->
+  <!-- React 18 UMD + ReactDOM 18 UMD -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-  <!-- Babel Standalone para compilar JSX en el navegador (sin build) -->
+  <!-- Babel Standalone (compila JSX en el navegador) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <meta name="theme-color" content="#2a75bb" />
   <style>
-    html,
-    body,
-    #root {
-      height: 100%
-    }
+    html, body, #root { height: 100% }
   </style>
 </head>
 
 <body class="min-h-screen bg-gray-50">
   <div id="root"></div>
 
-  <!-- Tu aplicación completa en JSX, compilada por Babel al vuelo. No usa import.meta ni bundlers. -->
+  <!-- App completa -->
   <script type="text/babel">
     const { useEffect, useMemo, useRef, useState } = React;
 
-    // =====================================
-    // PokeRandup – Pokédex completa (sin RRD)
-    // =====================================
-    // - Router por hash (#/ y #/pokemon/:id) para evitar `import.meta`
-    // - Tarjetas con formato base que cambia por tipo (color, borde, fondo sólido)
-    // - Búsqueda con sugerencias en vivo (autocompletar)
-    // - Vista de detalle: estadísticas numéricas + barras, habilidades (EN + ES + descripción),
-    //   medidas, línea evolutiva y fortalezas/debilidades (efectividades por tipo)
-    // - Equipo Pokémon: construir equipo (hasta 6), ver debilidades/resistencias/inmunidades del equipo
-    // - Estilos con Tailwind y acentos inspirados en Pokémon
-    // - Pruebas básicas en consola
-
-    // =============== Utilidades ===============
+    // =============== Utils ===============
     function titleCase(name) {
       return (name || "").replace(/\b\w/g, (c) => c.toUpperCase());
     }
@@ -59,26 +44,13 @@
       return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
     }
 
-    // Colores por tipo (aprox. oficiales)
+    // Colores por tipo
     const TYPE_COLORS = {
-      normal: "#A8A77A",
-      fire: "#EE8130",
-      water: "#6390F0",
-      electric: "#F7D02C",
-      grass: "#7AC74C",
-      ice: "#96D9D6",
-      fighting: "#C22E28",
-      poison: "#A33EA1",
-      ground: "#E2BF65",
-      flying: "#A98FF3",
-      psychic: "#F95587",
-      bug: "#A6B91A",
-      rock: "#B6A136",
-      ghost: "#735797",
-      dragon: "#6F35FC",
-      dark: "#705746",
-      steel: "#B7B7CE",
-      fairy: "#D685AD",
+      normal: "#A8A77A", fire: "#EE8130", water: "#6390F0", electric: "#F7D02C",
+      grass: "#7AC74C", ice: "#96D9D6", fighting: "#C22E28", poison: "#A33EA1",
+      ground: "#E2BF65", flying: "#A98FF3", psychic: "#F95587", bug: "#A6B91A",
+      rock: "#B6A136", ghost: "#735797", dragon: "#6F35FC", dark: "#705746",
+      steel: "#B7B7CE", fairy: "#D685AD",
     };
     const TYPE_ES = {
       normal: "Normal", fire: "Fuego", water: "Agua", electric: "Eléctrico", grass: "Planta", ice: "Hielo",
@@ -99,11 +71,39 @@
       );
     }
 
-    // =============== Efectividades (defensa) ===============
+    // =============== [4] Caché con TTL para fetch JSON ===============
+    const __cache = new Map();
+    async function cachedJson(url, ttlMs = 60 * 60 * 1000) {
+      const now = Date.now();
+      const mem = __cache.get(url);
+      if (mem && now - mem.t < ttlMs) return mem.v;
+
+      try {
+        const raw = localStorage.getItem(`cache:${url}`);
+        if (raw) {
+          const { t, v } = JSON.parse(raw);
+          if (now - t < ttlMs) { __cache.set(url, { t, v }); return v; }
+        }
+      } catch {}
+
+      const v = await fetch(url).then(r => r.json());
+      const rec = { t: now, v };
+      __cache.set(url, rec);
+      try { localStorage.setItem(`cache:${url}`, JSON.stringify(rec)); } catch {}
+      return v;
+    }
+
+    // =============== [7] Cache por tipo (efectividades) ===============
+    const TYPE_DATA_CACHE = {};
+    async function getTypeData(t) {
+      if (!TYPE_DATA_CACHE[t]) TYPE_DATA_CACHE[t] = cachedJson(`https://pokeapi.co/api/v2/type/${t}`);
+      return TYPE_DATA_CACHE[t];
+    }
     async function fetchDefenseMultipliers(typeNames) {
       const mult = Object.fromEntries(ALL_TYPES.map((t) => [t, 1]));
-      for (const t of typeNames) {
-        const data = await fetch(`https://pokeapi.co/api/v2/type/${t}`).then((r) => r.json());
+      const uniques = [...new Set(typeNames)];
+      const datas = await Promise.all(uniques.map(getTypeData));
+      for (const data of datas) {
         const rel = data.damage_relations || {};
         (rel.double_damage_from || []).forEach((x) => (mult[x.name] *= 2));
         (rel.half_damage_from || []).forEach((x) => (mult[x.name] *= 0.5));
@@ -112,9 +112,9 @@
       return mult;
     }
 
-    // =============== Habilidades (ES + EN + descripción) ===============
+    // =============== Habilidades (ES/EN + descripción) ===============
     async function fetchAbilityDetail(url) {
-      const d = await fetch(url).then((r) => r.json());
+      const d = await cachedJson(url);
       const name_en = (d.names || []).find((n) => n.language?.name === "en")?.name || d.name;
       const name_es = (d.names || []).find((n) => n.language?.name === "es")?.name || name_en;
       const flavor_es = (d.flavor_text_entries || []).find((e) => e.language?.name === "es")?.flavor_text;
@@ -122,6 +122,29 @@
         (d.effect_entries || []).find((e) => e.language?.name === "en")?.effect;
       const description = (flavor_es || effect_en || "Sin descripción disponible").replace(/\s+/g, " ");
       return { name_en, name_es, description };
+    }
+
+    // =============== [8] Texto para detalles de evolución ===============
+    function evoDetailToText(ed) {
+      if (!ed) return "";
+      const t = s => (s || "").replace(/-/g, " ");
+      const trig = ed.trigger?.name;
+
+      if (trig === "level-up" && ed.min_level) return `Nivel ${ed.min_level}`;
+      if (trig === "level-up" && ed.time_of_day) return `Subir nivel (${t(ed.time_of_day)})`;
+      if (trig === "use-item" && ed.item?.name) return `Usar ${t(ed.item.name)}`;
+      if (trig === "trade") return ed.held_item?.name ? `Intercambio (con ${t(ed.held_item.name)})` : "Intercambio";
+      if (ed.known_move?.name) return `Con movimiento ${t(ed.known_move.name)}`;
+      if (ed.move?.name) return `Con movimiento ${t(ed.move.name)}`;
+      if (ed.party_species?.name) return `Con ${t(ed.party_species.name)} en equipo`;
+      if (ed.party_type?.name) return `Con compañero tipo ${t(ed.party_type.name)}`;
+      if (ed.min_happiness) return "Por amistad";
+      if (ed.min_beauty) return "Por belleza";
+      if (ed.min_affection) return "Por afecto";
+      if (ed.needs_overworld_rain) return "Lluvia";
+      if (ed.held_item?.name) return `Equipando ${t(ed.held_item.name)}`;
+      if (ed.location?.name) return `En ${t(ed.location.name)}`;
+      return t(trig);
     }
 
     // =============== Router por hash ===============
@@ -132,6 +155,18 @@
       if (m) return { name: "pokemon", id: Number(m[1]) };
       return { name: "home" };
     }
+
+    // =============== [9] Rango por generación ===============
+    const GEN_RANGES = {
+      'all': [1, 99999],
+      '1': [1, 151], '2': [152, 251], '3': [252, 386], '4': [387, 493],
+      '5': [494, 649], '6': [650, 721], '7': [722, 809], '8': [810, 905],
+      '9': [906, 1025]
+    };
+
+    // =============== [10] Compartir equipo ===============
+    function encodeTeam(team) { return (team || []).map(x => x.id).join("."); }
+    function decodeTeam(s) { return (s || "").split(".").map(Number).filter(Boolean).slice(0, 6); }
 
     // =============== App raíz ===============
     function PokeRandupApp() {
@@ -147,7 +182,28 @@
         return () => window.removeEventListener("hashchange", onHash);
       }, []);
 
-      useEffect(() => { try { localStorage.setItem("pokerandup_team", JSON.stringify(team)); } catch { } }, [team]);
+      useEffect(() => { try { localStorage.setItem("pokerandup_team", JSON.stringify(team)); } catch {} }, [team]);
+
+      // [10] Cargar equipo desde ?team= al iniciar
+      useEffect(() => {
+        const params = new URLSearchParams(location.hash.split("?")[1] || "");
+        const teamParam = params.get("team");
+        if (!teamParam) return;
+        const ids = decodeTeam(teamParam);
+        if (!ids.length) return;
+        (async () => {
+          const members = await Promise.all(ids.map(async (pid) => {
+            const d = await cachedJson(`https://pokeapi.co/api/v2/pokemon/${pid}`);
+            return {
+              id: d.id,
+              name: d.name,
+              image: d.sprites?.other?.["official-artwork"]?.front_default || artUrlById(d.id),
+              types: (d.types || []).map((t) => t.type.name),
+            };
+          }));
+          setTeam(members);
+        })();
+      }, []);
 
       useEffect(() => {
         let cancelled = false;
@@ -194,27 +250,20 @@
 
     function Header({ teamCount }) {
       return (
-        <header className="sticky top-0 z-10 "
-          style={{
-            background: "linear-gradient(45deg,   #F2CEEF, #DAE9F8, #FBE2D5, #D9D9D9, #C1F0C8, #F2F2F2 )"
-          }}>
-
+        <header className="sticky top-0 z-10"
+          style={{ background: "linear-gradient(45deg, #F2CEEF, #DAE9F8, #FBE2D5, #D9D9D9, #C1F0C8, #F2F2F2)" }}>
           <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <a href="#/" className="inline-flex items-center gap-2">
               <LogoIcon />
               <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-                <span className="text-[#D62828]" style={{ fontWeight: "bold", fontSize: "50px", color: "#ffcb05", WebkitTextStroke: "3px #2a75bb", textShadow: "2px 2px 6px rgba(0,0,0,0.5)" }}>Poke</span>
-                <span className="text-[#003049]" style={{ fontWeight: "bold", fontSize: "50px", color: "#2a75bb", WebkitTextStroke: "1px #ffcb05", textShadow: "2px 2px 6px rgba(0,0,0,0.5)" }}>Rand</span>
-                <span className="text-[#F77F00]" style={{ fontWeight: "bold", fontSize: "50px", color: "#ffcb05", WebkitTextStroke: "3px #2a75bb", textShadow: "2px 2px 6px rgba(0,0,0,0.5)" }}>Up</span>
-
-
-
+                <span style={{ fontWeight: "bold", fontSize: "50px", color: "#ffcb05", WebkitTextStroke: "3px #2a75bb", textShadow: "2px 2px 6px rgba(0,0,0,0.5)" }}>Poke</span>
+                <span style={{ fontWeight: "bold", fontSize: "50px", color: "#2a75bb", WebkitTextStroke: "1px #ffcb05", textShadow: "2px 2px 6px rgba(0,0,0,0.5)" }}>Rand</span>
+                <span style={{ fontWeight: "bold", fontSize: "50px", color: "#ffcb05", WebkitTextStroke: "3px #2a75bb", textShadow: "2px 2px 6px rgba(0,0,0,0.5)" }}>Up</span>
               </h1>
             </a>
             <div className="text-xs text-gray-600 flex items-center gap-3">
               <a href="#/" className="rounded-full px-3 py-1 border border-gray-300 hover:bg-gray-50 text-sm">Pokédex</a>
               <span className="rounded-full px-3 py-1 bg-[#003049] text-white text-sm">Equipo {teamCount}/6</span>
-              <span className="text-gray-400"></span>
             </div>
           </div>
         </header>
@@ -260,27 +309,28 @@
 
       const [items, setItems] = useState([]);
 
+      // [6] total + índice con caché
       useEffect(() => {
         let cancelled = false;
         (async () => {
           try {
-            const r = await fetch("https://pokeapi.co/api/v2/pokemon?limit=1");
-            const d = await r.json();
-            if (!cancelled) setTotalCount(d.count || 1025);
-          } catch (e) {
-            if (!cancelled) setTotalCount(1025);
-          }
-          try {
-            const all = await fetch("https://pokeapi.co/api/v2/pokemon?limit=20000").then((x) => x.json());
+            const r = await cachedJson("https://pokeapi.co/api/v2/pokemon?limit=1");
+            const tot = r?.count || 1025;
+            if (!cancelled) setTotalCount(tot);
+
+            const all = await cachedJson(`https://pokeapi.co/api/v2/pokemon?limit=${tot}&offset=0`);
             const idx = (all.results || []).map((p) => ({ name: p.name, id: getIdFromUrl(p.url) }));
             if (!cancelled) setNameIndex(idx);
-          } catch { }
+          } catch (e) {
+            if (!cancelled) { setTotalCount(1025); setNameIndex([]); }
+          }
         })();
         return () => { cancelled = true; };
       }, []);
 
       const maxPage = useMemo(() => Math.max(1, Math.ceil((totalCount || 1) / pageSize)), [totalCount, pageSize]);
 
+      // Lista paginada (caché)
       useEffect(() => {
         if (!totalCount) return;
         const offset = (page - 1) * pageSize;
@@ -291,11 +341,11 @@
 
         (async () => {
           try {
-            const base = await fetch(url).then((r) => r.json());
+            const base = await cachedJson(url);
             const results = base.results || [];
             const details = await Promise.all(
               results.map(async (it) => {
-                const d = await fetch(it.url).then((r) => r.json());
+                const d = await cachedJson(it.url);
                 const id = d.id;
                 const image = d.sprites?.other?.["official-artwork"]?.front_default || artUrlById(id);
                 const types = (d.types || []).map((t) => t.type.name);
@@ -316,17 +366,21 @@
         return () => { cancelled = true; };
       }, [totalCount, page, pageSize]);
 
+      // Sugerencias
       useEffect(() => {
         if (!query) { setSuggestions([]); return; }
         clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
           const q = query.toLowerCase();
-          const first = nameIndex.filter((p) => p.name.includes(q) || String(p.id) === q).slice(0, 10);
+          const first = nameIndex
+            .filter((p) => p.name.includes(q) || String(p.id) === q)
+            .slice(0, 10);
           setSuggestions(first);
         }, 200);
         return () => clearTimeout(debounceRef.current);
       }, [query, nameIndex]);
 
+      // Buscar
       async function handleSearch(e) {
         e?.preventDefault?.();
         const q = (query || "").trim().toLowerCase();
@@ -337,9 +391,7 @@
           abortRef.current?.abort?.();
           const controller = new AbortController();
           abortRef.current = controller;
-          const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(q)}`, { signal: controller.signal });
-          if (!r.ok) throw new Error("No encontrado");
-          const d = await r.json();
+          const d = await cachedJson(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(q)}`);
           setSearchResult({
             id: d.id,
             name: d.name,
@@ -367,6 +419,40 @@
       }
 
       function goPage(p) { setPage((prev) => Math.min(Math.max(1, p), maxPage)); }
+
+      // ===== [9] Filtros / orden =====
+      const [typeFilter, setTypeFilter] = useState([]);
+      const [genFilter, setGenFilter] = useState('all');
+      const [sortKey, setSortKey] = useState('id');
+
+      function toggleType(t) {
+        setTypeFilter((prev) => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+      }
+      function clearFilters() {
+        setTypeFilter([]); setGenFilter('all'); setSortKey('id');
+      }
+
+      const filteredItems = useMemo(() => {
+        return items.filter(it => {
+          const okType = typeFilter.length ? it.types.some(t => typeFilter.includes(t)) : true;
+          const [a, b] = GEN_RANGES[genFilter] || GEN_RANGES.all;
+          const okGen = it.id >= a && it.id <= b;
+          return okType && okGen;
+        });
+      }, [items, typeFilter, genFilter]);
+
+      const sortedItems = useMemo(() => {
+        const arr = [...filteredItems];
+        arr.sort((A, B) => {
+          if (sortKey === 'name') return A.name.localeCompare(B.name);
+          if (sortKey === 'bst') return (B.bst || 0) - (A.bst || 0);
+          if (sortKey === 'exp') return (B.base_experience || 0) - (A.base_experience || 0);
+          if (sortKey === 'height') return (B.height || 0) - (A.height || 0);
+          if (sortKey === 'weight') return (B.weight || 0) - (A.weight || 0);
+          return A.id - B.id;
+        });
+        return arr;
+      }, [filteredItems, sortKey]);
 
       return (
         <>
@@ -417,52 +503,76 @@
           <TeamBuilder team={team} teamDefense={teamDefense} removeFromTeam={removeFromTeam} clearTeam={clearTeam} />
 
           {/* Controles y paginación */}
-<section className="mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-  {/* Por página */}
-  <div className="flex items-center gap-2 justify-center md:justify-start">
-    <span className="text-sm text-gray-600">Por página:</span>
-    <select
-      className="h-10 px-3 rounded-xl border border-gray-300"
-      value={pageSize}
-      onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-    >
-      {PAGE_SIZE_OPTIONS.map((n) => (
-        <option key={n} value={n}>{n}</option>
-      ))}
-    </select>
-  </div>
+          <section className="mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            {/* Por página */}
+            <div className="flex items-center gap-2 justify-center md:justify-start">
+              <span className="text-sm text-gray-600">Por página:</span>
+              <select
+                className="h-10 px-3 rounded-xl border border-gray-300"
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+              >
+                {PAGE_SIZE_OPTIONS.map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
 
-  {/* Botonera */}
-  <div className="flex items-center gap-2 justify-center md:justify-end flex-nowrap overflow-x-auto md:overflow-visible">
-    <button
-      onClick={() => goPage(1)}
-      className="h-10 px-3 rounded-xl border border-gray-300 hover:bg-gray-100"
-      disabled={page === 1}
-    >«</button>
+            {/* Botonera */}
+            <div className="flex items-center gap-2 justify-center md:justify-end flex-nowrap overflow-x-auto md:overflow-visible">
+              <button onClick={() => goPage(1)} className="h-10 px-3 rounded-xl border border-gray-300 hover:bg-gray-100" disabled={page === 1}>«</button>
+              <button onClick={() => goPage(page - 1)} className="h-10 px-3 rounded-xl border border-gray-300 hover:bg-gray-100" disabled={page === 1}>‹</button>
+              <span className="h-10 px-3 inline-flex items-center text-sm text-gray-700 font-medium whitespace-nowrap">
+                Página <b className="mx-1">{page}</b> de <b>{maxPage}</b>
+              </span>
+              <button onClick={() => goPage(page + 1)} className="h-10 px-3 rounded-xl border border-gray-300 hover:bg-gray-100" disabled={page === maxPage}>›</button>
+              <button onClick={() => goPage(maxPage)} className="h-10 px-3 rounded-xl border border-gray-300 hover:bg-gray-100" disabled={page === maxPage}>»</button>
+            </div>
+          </section>
 
-    <button
-      onClick={() => goPage(page - 1)}
-      className="h-10 px-3 rounded-xl border border-gray-300 hover:bg-gray-100"
-      disabled={page === 1}
-    >‹</button>
+          {/* [9] Filtros y orden */}
+          <section className="mb-3 bg-white rounded-2xl shadow p-3 md:p-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              {/* Tipos */}
+              <div className="flex flex-wrap gap-2">
+                {ALL_TYPES.map(t => {
+                  const active = typeFilter.includes(t);
+                  return (
+                    <button key={t}
+                      onClick={() => toggleType(t)}
+                      className={`px-2 py-1 rounded-full text-xs border transition ${active ? 'text-white' : 'text-gray-700 bg-white'}`}
+                      style={{ borderColor: TYPE_COLORS[t], backgroundColor: active ? TYPE_COLORS[t] : undefined }}
+                    >
+                      {TYPE_ES[t]}
+                    </button>
+                  );
+                })}
+                <button onClick={clearFilters} className="px-2 py-1 text-xs rounded-full border border-gray-300 hover:bg-gray-50">
+                  Limpiar
+                </button>
+              </div>
 
-    <span className="h-10 px-3 inline-flex items-center text-sm text-gray-700 font-medium whitespace-nowrap">
-      Página <b className="mx-1">{page}</b> de <b>{maxPage}</b>
-    </span>
-
-    <button
-      onClick={() => goPage(page + 1)}
-      className="h-10 px-3 rounded-xl border border-gray-300 hover:bg-gray-100"
-      disabled={page === maxPage}
-    >›</button>
-
-    <button
-      onClick={() => goPage(maxPage)}
-      className="h-10 px-3 rounded-xl border border-gray-300 hover:bg-gray-100"
-      disabled={page === maxPage}
-    >»</button>
-  </div>
-</section>
+              {/* Gen + orden */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600">Gen:</label>
+                <select value={genFilter} onChange={e => setGenFilter(e.target.value)} className="px-2 py-1 rounded-lg border border-gray-300 text-sm">
+                  <option value="all">Todas</option>
+                  {Object.keys(GEN_RANGES).filter(k => k !== 'all').map(k => (
+                    <option key={k} value={k}>Gen {k}</option>
+                  ))}
+                </select>
+                <label className="text-sm text-gray-600 ml-2">Orden:</label>
+                <select value={sortKey} onChange={e => setSortKey(e.target.value)} className="px-2 py-1 rounded-lg border border-gray-300 text-sm">
+                  <option value="id">#</option>
+                  <option value="name">Nombre</option>
+                  <option value="bst">BST</option>
+                  <option value="exp">EXP</option>
+                  <option value="height">Altura</option>
+                  <option value="weight">Peso</option>
+                </select>
+              </div>
+            </div>
+          </section>
 
           {/* Lista */}
           <section className="rounded-2xl bg-white shadow p-3 md:p-4">
@@ -471,7 +581,7 @@
               <div className="py-8 text-center animate-pulse">Cargando Pokédex…</div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
-                {items.map((it) => <PokemonCard key={it.id} data={it} onAdd={addToTeam} />)}
+                {sortedItems.map((it) => <PokemonCard key={it.id} data={it} onAdd={addToTeam} />)}
               </div>
             )}
           </section>
@@ -498,60 +608,63 @@
           .sort((a, b) => b.resist + b.immune - (a.resist + a.immune));
       }, [teamDefense, teamLen]);
 
+      // [10] Compartir
+      function shareTeam() {
+        const ids = encodeTeam(team);
+        const u = new URL(location.href);
+        const params = new URLSearchParams(u.hash.split("?")[1] || "");
+        params.set("team", ids);
+        u.hash = `#/?${params.toString()}`;
+        const link = u.toString();
+        navigator.clipboard?.writeText(link).catch(()=>{});
+        alert("Enlace copiado al portapapeles");
+      }
+
       return (
         <section className="mb-4 md:mb-6 rounded-2xl bg-white shadow p-3 md:p-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Mi equipo ({teamLen}/6)</h2>
             <div className="flex gap-2">
+              <button onClick={shareTeam} className="px-3 py-1.5 rounded-xl border border-gray-300 hover:bg-gray-100 text-sm">Compartir</button>
               <button onClick={clearTeam} className="px-3 py-1.5 rounded-xl border border-gray-300 hover:bg-gray-100 text-sm">Limpiar equipo</button>
             </div>
           </div>
 
-          {/* Slots */}
-         <div className="mt-3 grid grid-cols-3 sm:grid-cols-6 gap-3">
-  {Array.from({ length: 6 }).map((_, i) => {
-    const m = team[i];
-    const color = m ? (TYPE_COLORS[m.types[0]] || "#ddd") : "#e5e7eb"; // gris claro para vacío
-    return (
-      <div
-        key={`slot-${i}`}
-        className={`relative aspect-square rounded-xl border overflow-hidden grid place-items-center ${
-          m ? "" : "text-gray-400 border-dashed"
-        }`}
-        style={{
-          borderColor: color,
-          backgroundColor: m ? `${color}22` : "transparent",
-        }}
-      >
-        {m ? (
-          <>
-            {/* eslint-disable-next-line jsx-a11y/alt-text */}
-            <img
-              src={artUrlById(m.id)}
-              onError={(e) => (e.currentTarget.src = fallbackSpriteById(m.id))}
-              className="w-full h-full object-contain p-2"
-            />
-            <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between text-[11px]">
-              <span className="px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: color }}>
-                {titleCase(m.name)}
-              </span>
-              <button
-                onClick={() => removeFromTeam(m.id)}
-                className="px-1.5 py-0.5 rounded bg-white/90 border text-gray-700"
-              >
-                Quitar
-              </button>
-            </div>
-          </>
-        ) : (
-          <span>Vacío</span>
-        )}
-      </div>
-    );
-  })}
-</div>
+          {/* Slots con clave por índice (arregla glitch al quitar el primero) */}
+          <div className="mt-3 grid grid-cols-3 sm:grid-cols-6 gap-3">
+            {Array.from({ length: 6 }).map((_, i) => {
+              const m = team[i];
+              const color = m ? (TYPE_COLORS[m.types[0]] || "#ddd") : "#e5e7eb";
+              return (
+                <div
+                  key={`slot-${i}`}
+                  className={`relative aspect-square rounded-xl border overflow-hidden grid place-items-center ${m ? "" : "text-gray-400 border-dashed"}`}
+                  style={{ borderColor: color, backgroundColor: m ? `${color}22` : "transparent" }}
+                >
+                  {m ? (
+                    <>
+                      {/* eslint-disable-next-line jsx-a11y/alt-text */}
+                      <img
+                        src={artUrlById(m.id)}
+                        onError={(e) => (e.currentTarget.src = fallbackSpriteById(m.id))}
+                        className="w-full h-full object-contain p-2"
+                      />
+                      <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between text-[11px]">
+                        <span className="px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: color }}>
+                          {titleCase(m.name)}
+                        </span>
+                        <button onClick={() => removeFromTeam(m.id)} className="px-1.5 py-0.5 rounded bg-white/90 border text-gray-700">Quitar</button>
+                      </div>
+                    </>
+                  ) : (
+                    <span>Vacío</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
-          {/* Resumen defensivo del equipo */}
+          {/* Resumen defensivo */}
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <h3 className="font-semibold mb-2">Puntos débiles (≥ mitad del equipo)</h3>
@@ -653,24 +766,27 @@
           try {
             setLoading(true);
             setError("");
-            const d = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then((r) => r.json());
+            const d = await cachedJson(`https://pokeapi.co/api/v2/pokemon/${id}`);
             if (cancelled) return;
             setPokemon(d);
 
-            const species = await fetch(d.species.url).then((r) => r.json());
+            const species = await cachedJson(d.species.url);
             if (cancelled) return;
             const evoUrl = species.evolution_chain?.url;
             if (evoUrl) {
-              const chain = await fetch(evoUrl).then((r) => r.json());
+              const chain = await cachedJson(evoUrl);
               const seq = [];
-              function walk(node) {
+              function walk(node, viaFromParent = null) {
                 if (!node) return;
                 const m = node.species?.url?.match(/\/pokemon-species\/(\d+)\/?$/);
                 const sid = m ? Number(m[1]) : null;
-                seq.push({ id: sid, name: node.species?.name });
-                (node.evolves_to || []).forEach(walk);
+                seq.push({ id: sid, name: node.species?.name, via: viaFromParent });
+                (node.evolves_to || []).forEach(next => {
+                  const ed = (next.evolution_details || [])[0] || null;
+                  walk(next, evoDetailToText(ed));
+                });
               }
-              walk(chain.chain);
+              walk(chain.chain, null);
               if (!cancelled) setEvoChain(seq);
             } else if (!cancelled) {
               setEvoChain([]);
@@ -692,6 +808,13 @@
         return () => { cancelled = true; };
       }, [id]);
 
+      // [11] Prefetch vecinos
+      useEffect(() => {
+        const n = Number(id);
+        cachedJson(`https://pokeapi.co/api/v2/pokemon/${n + 1}`).catch(()=>{});
+        if (n > 1) cachedJson(`https://pokeapi.co/api/v2/pokemon/${n - 1}`).catch(()=>{});
+      }, [id]);
+
       if (loading) return <div className="py-16 text-center animate-pulse">Cargando…</div>;
       if (error) return <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700">{error}</div>;
       if (!pokemon) return null;
@@ -700,7 +823,6 @@
       const name = pokemon.name;
       const image = pokemon.sprites?.other?.["official-artwork"]?.front_default || artUrlById(pid);
       const types = pokemon.types.map((t) => t.type.name);
-      const abilities = pokemon.abilities.map((a) => a.ability.name);
       const stats = pokemon.stats.map((s) => ({ name: s.stat.name, value: s.base_stat }));
       const heightM = pokemon.height / 10;
       const weightKg = pokemon.weight / 10;
@@ -749,7 +871,9 @@
                 {stats.map((s) => (
                   <div key={s.name} className="grid grid-cols-5 gap-2 items-center">
                     <div className="col-span-2 text-sm font-medium text-gray-700">{titleCase(s.name.replace(/-/g, " "))}</div>
-                    <div className="col-span-2 h-3 bg-gray-100 rounded"><div className="h-3 rounded" style={{ width: `${Math.min(100, (s.value / 180) * 100)}%`, background: "linear-gradient(90deg,#003049,#F77F00)" }}></div></div>
+                    <div className="col-span-2 h-3 bg-gray-100 rounded">
+                      <div className="h-3 rounded" style={{ width: `${Math.min(100, (s.value / 180) * 100)}%`, background: "linear-gradient(90deg,#003049,#F77F00)" }}></div>
+                    </div>
                     <div className="text-sm text-gray-800 font-semibold tabular-nums text-right">{s.value}</div>
                   </div>
                 ))}
@@ -800,56 +924,33 @@
               )}
             </div>
 
-           <div className="rounded-2xl bg-white shadow p-4">
+            <div className="rounded-2xl bg-white shadow p-4">
               <h3 className="text-lg font-semibold mb-3">Línea evolutiva</h3>
-
               {evoChain.length === 0 ? (
                 <p className="text-sm text-gray-600">No disponible.</p>
               ) : (
                 <div className="flex flex-col items-center gap-3 text-center md:flex-row md:justify-center md:gap-6">
                   {evoChain.map((evo, idx) => (
                     <React.Fragment key={`${evo.id}-${idx}`}>
-                      <a
-                        href={`#/pokemon/${evo.id}`}
-                        className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition"
-                      >
+                      <a href={`#/pokemon/${evo.id}`} className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition">
                         {/* eslint-disable-next-line jsx-a11y/alt-text */}
                         <img
                           src={artUrlById(evo.id)}
                           onError={(e) => (e.currentTarget.src = fallbackSpriteById(evo.id))}
                           className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
                         />
-                        <div className="text-xs sm:text-sm font-medium">
-                          {titleCase(evo.name)}
-                        </div>
+                        <div className="text-xs sm:text-sm font-medium">{titleCase(evo.name)}</div>
+                        {evo.via && <div className="text-[11px] text-gray-500">{evo.via}</div>}
                       </a>
 
-                      {/* Logo entre etapas */}
                       {idx < evoChain.length - 1 && (
                         <>
                           {/* Flecha vertical (solo móvil) */}
-                          <svg
-                            className="w-5 h-5 text-[#2a75bb] opacity-70 md:hidden"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
+                          <svg className="w-5 h-5 text-[#2a75bb] opacity-70 md:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M6 9l6 6 6-6" />
                           </svg>
-
                           {/* Flecha horizontal (solo escritorio) */}
-                          <svg
-                            className="hidden md:block w-6 h-6 text-[#2a75bb] opacity-70"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
+                          <svg className="hidden md:block w-6 h-6 text-[#2a75bb] opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M9 6l6 6-6 6" />
                           </svg>
                         </>
@@ -880,6 +981,69 @@
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<PokeRandupApp />);
   </script>
-</body>
 
+  <!-- Manifest y Service Worker, todo inline con Blob URLs -->
+  <script>
+    // Manifest inline (Blob)
+    const manifestObj = {
+      name: "PokeRandup – Pokédex",
+      short_name: "PokeRandup",
+      start_url: "./",
+      display: "standalone",
+      background_color: "#ffffff",
+      theme_color: "#2a75bb",
+      icons: [] // puedes añadir data:URIs si quieres íconos inline
+    };
+    const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: "application/manifest+json" });
+    const manifestURL = URL.createObjectURL(manifestBlob);
+    const link = document.createElement("link");
+    link.rel = "manifest";
+    link.href = manifestURL;
+    document.head.appendChild(link);
+
+    // Service Worker inline (Blob)
+    const swCode = `
+      const CACHE = "pokerandup-v1";
+      const CORE = ["./"];
+
+      self.addEventListener("install", (e) => {
+        e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));
+        self.skipWaiting();
+      });
+
+      self.addEventListener("activate", (e) => {
+        e.waitUntil(
+          caches.keys().then(keys =>
+            Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+          )
+        );
+        self.clients.claim();
+      });
+
+      self.addEventListener("fetch", (e) => {
+        const { request } = e;
+        if (request.method !== "GET") return;
+
+        e.respondWith((async () => {
+          const cache = await caches.open(CACHE);
+          const cached = await cache.match(request);
+          const fetchPromise = fetch(request).then(resp => {
+            if (resp && (resp.status === 200 || resp.type === "opaque")) {
+              cache.put(request, resp.clone());
+            }
+            return resp;
+          }).catch(() => cached);
+          return cached || fetchPromise;
+        })());
+      });
+    `;
+    if ('serviceWorker' in navigator) {
+      const swBlob = new Blob([swCode], { type: "text/javascript" });
+      const swUrl = URL.createObjectURL(swBlob);
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register(swUrl).catch(console.warn);
+      });
+    }
+  </script>
+</body>
 </html>
