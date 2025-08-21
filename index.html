@@ -746,40 +746,64 @@
               )}
             </div>
 
-            <div className="flex flex-col items-center gap-3 text-center">
-              {evoChain.map((evo, idx) => (
-                <React.Fragment key={`${evo.id}-${idx}`}>
-                  <a
-                    href={`#/pokemon/${evo.id}`}
-                    className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition"
-                  >
-                    {/* eslint-disable-next-line jsx-a11y/alt-text */}
-                    <img
-                      src={artUrlById(evo.id)}
-                      onError={(e) => (e.currentTarget.src = fallbackSpriteById(evo.id))}
-                      className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
-                    />
-                    <div className="text-xs sm:text-sm font-medium">{titleCase(evo.name)}</div>
-                  </a>
+           <div className="rounded-2xl bg-white shadow p-4">
+              <h3 className="text-lg font-semibold mb-3">Línea evolutiva</h3>
 
-                  {/* Flecha “logo” entre etapas (solo si no es el último) */}
-                  {idx < evoChain.length - 1 && (
-                    <svg
-                      className="w-5 h-5 sm:w-6 sm:h-6 text-[#2a75bb] opacity-70"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      {/* chevron hacia abajo (estilo limpio) */}
-                      <path d="M6 9l6 6 6-6" />
-                    </svg>
-                  )}
-                </React.Fragment>
-              ))}
+              {evoChain.length === 0 ? (
+                <p className="text-sm text-gray-600">No disponible.</p>
+              ) : (
+                <div className="flex flex-col items-center gap-3 text-center md:flex-row md:justify-center md:gap-6">
+                  {evoChain.map((evo, idx) => (
+                    <React.Fragment key={`${evo.id}-${idx}`}>
+                      <a
+                        href={`#/pokemon/${evo.id}`}
+                        className="flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition"
+                      >
+                        {/* eslint-disable-next-line jsx-a11y/alt-text */}
+                        <img
+                          src={artUrlById(evo.id)}
+                          onError={(e) => (e.currentTarget.src = fallbackSpriteById(evo.id))}
+                          className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
+                        />
+                        <div className="text-xs sm:text-sm font-medium">
+                          {titleCase(evo.name)}
+                        </div>
+                      </a>
+
+                      {/* Logo entre etapas */}
+                      {idx < evoChain.length - 1 && (
+                        <>
+                          {/* Flecha vertical (solo móvil) */}
+                          <svg
+                            className="w-5 h-5 text-[#2a75bb] opacity-70 md:hidden"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M6 9l6 6 6-6" />
+                          </svg>
+
+                          {/* Flecha horizontal (solo escritorio) */}
+                          <svg
+                            className="hidden md:block w-6 h-6 text-[#2a75bb] opacity-70"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M9 6l6 6-6 6" />
+                          </svg>
+                        </>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
         </div>
