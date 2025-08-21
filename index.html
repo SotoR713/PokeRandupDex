@@ -437,13 +437,13 @@
       onClick={() => goPage(1)}
       className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100 min-w-[90px] whitespace-nowrap"
       disabled={page === 1}
-    >« Primero</button>
+    >«</button>
 
     <button
       onClick={() => goPage(page - 1)}
       className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100 min-w-[90px] whitespace-nowrap"
       disabled={page === 1}
-    >‹ Anterior</button>
+    >‹</button>
 
     <span className="text-sm text-gray-700 px-2 font-medium whitespace-nowrap">
       Página <b>{page}</b> de <b>{maxPage}</b>
@@ -453,13 +453,13 @@
       onClick={() => goPage(page + 1)}
       className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100 min-w-[90px] whitespace-nowrap"
       disabled={page === maxPage}
-    >Siguiente ›</button>
+    >›</button>
 
     <button
       onClick={() => goPage(maxPage)}
       className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gray-100 min-w-[90px] whitespace-nowrap"
       disabled={page === maxPage}
-    >Último »</button>
+    >»</button>
   </div>
 </section>
 
