@@ -154,28 +154,76 @@
     }
 
     function Header() {
-      return (
-        <header className="sticky top-0 z-10"
-          style={{ background: "linear-gradient(45deg,#F2CEEF,#DAE9F8,#FBE2D5,#D9D9D9,#C1F0C8,#F2F2F2)" }}>
-          <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex items-center justify-between gap-3">
-            <a href="#/" className="inline-flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full grid place-items-center" style={{ background: "linear-gradient(135deg,#D62828,#F77F00)" }}>
-                <div className="w-3 h-3 rounded-full bg-[#003049]"></div>
-              </div>
-              <h1 className="text-3xl font-extrabold leading-none">
-                <span style={{ fontWeight: 800, fontSize: "40px", color: "#ffcb05", WebkitTextStroke: "3px #2a75bb", textShadow: "2px 2px 6px rgba(0,0,0,0.5)" }}>Poke</span>
-                <span style={{ fontWeight: 800, fontSize: "40px", color: "#2a75bb", WebkitTextStroke: "1px #ffcb05", textShadow: "2px 2px 6px rgba(0,0,0,0.5)" }}>Rand</span>
-                <span style={{ fontWeight: 800, fontSize: "40px", color: "#ffcb05", WebkitTextStroke: "3px #2a75bb", textShadow: "2px 2px 6px rgba(0,0,0,0.5)" }}>Up</span>
-              </h1>
-            </a>
-
-            <a href="#/torneo" className="rounded-full px-3 ml-auto py-1 border border-gray-300 hover:bg-white/60 text-sm">Torneo</a>
-
-            <a href="#/" className="rounded-full px-3 py-1 border border-gray-300 hover:bg-white/60 text-sm">Pokédex</a>
+  return (
+    <header
+      className="sticky top-0 z-10"
+      style={{ background: "linear-gradient(45deg,#F2CEEF,#DAE9F8,#FBE2D5,#D9D9D9,#C1F0C8,#F2F2F2)" }}
+    >
+      <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-wrap items-center gap-3">
+        {/* Logo + título */}
+        <a href="#/" className="inline-flex items-center gap-2 min-w-0">
+          <div
+            className="w-8 h-8 rounded-full grid place-items-center shrink-0"
+            style={{ background: "linear-gradient(135deg,#D62828,#F77F00)" }}
+          >
+            <div className="w-3 h-3 rounded-full bg-[#003049]" />
           </div>
-        </header>
-      );
-    }
+
+          {/* Tamaño fluido: se adapta de 24px a 40px */}
+          <h1 className="font-extrabold leading-none text-[clamp(24px,7vw,40px)]">
+            <span
+              style={{
+                fontWeight: 800,
+                color: "#ffcb05",
+                WebkitTextStroke: "2px #2a75bb",
+                textShadow: "2px 2px 6px rgba(0,0,0,0.5)"
+              }}
+            >
+              Poke
+            </span>
+            <span
+              style={{
+                fontWeight: 800,
+                color: "#2a75bb",
+                WebkitTextStroke: "1px #ffcb05",
+                textShadow: "2px 2px 6px rgba(0,0,0,0.5)"
+              }}
+            >
+              Rand
+            </span>
+            <span
+              style={{
+                fontWeight: 800,
+                color: "#ffcb05",
+                WebkitTextStroke: "2px #2a75bb",
+                textShadow: "2px 2px 6px rgba(0,0,0,0.5)"
+              }}
+            >
+              Up
+            </span>
+          </h1>
+        </a>
+
+        {/* Navegación: pasa a la segunda línea y se alinea a la derecha en móvil */}
+        <div className="ml-auto w-full sm:w-auto flex items-center gap-2 justify-end">
+          <a
+            href="#/torneo"
+            className="rounded-full px-3 py-1 border border-gray-300 hover:bg-white/60 text-sm whitespace-nowrap"
+          >
+            Torneo
+          </a>
+          <a
+            href="#/"
+            className="rounded-full px-3 py-1 border border-gray-300 hover:bg-white/60 text-sm whitespace-nowrap"
+          >
+            Pokédex
+          </a>
+        </div>
+      </div>
+    </header>
+  );
+}
+
 
     function Footer() {
       return (
