@@ -4,7 +4,22 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PokeRandup – Pokédex</title>
+  <title>PokeRandup</title>
+  <link rel="icon" type="image/svg+xml"
+href="data:image/svg+xml;utf8,
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
+  <defs>
+    <clipPath id='t'><rect x='0' y='0' width='64' height='32'/></clipPath>
+    <clipPath id='b'><rect x='0' y='32' width='64' height='32'/></clipPath>
+  </defs>
+  <circle cx='32' cy='32' r='30' fill='%23ef4444' clip-path='url(%23t)'/>
+  <circle cx='32' cy='32' r='30' fill='%23ffffff' clip-path='url(%23b)'/>
+  <circle cx='32' cy='32' r='30' fill='none' stroke='%23111827' stroke-width='4'/>
+  <rect x='2' y='30' width='60' height='4' fill='%23111827'/>
+  <circle cx='32' cy='32' r='10' fill='%23ffffff' stroke='%23111827' stroke-width='4'/>
+  <circle cx='32' cy='32' r='4' fill='%239ca3af' stroke='%23111827' stroke-width='2'/>
+</svg>">
+
   <meta name="description"
     content="PokeRandup: Pokédex con equipo, filtros, línea evolutiva, fortalezas/debilidades, movimientos y más.">
 
@@ -153,15 +168,16 @@
       );
     }
 
-    function Header() {
+   function Header() {
   return (
     <header
       className="sticky top-0 z-10"
       style={{ background: "linear-gradient(45deg,#F2CEEF,#DAE9F8,#FBE2D5,#D9D9D9,#C1F0C8,#F2F2F2)" }}
     >
-      <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex flex-wrap items-center gap-3">
+      {/* altura fija -> todo alinea al centro vertical */}
+      <div className="max-w-7xl mx-auto px-4 flex items-center gap-3 h-14 sm:h-16">
         {/* Logo + título */}
-        <a href="#/" className="inline-flex items-center gap-2 min-w-0">
+        <a href="#/" className="flex items-center gap-2 min-w-0">
           <div
             className="w-8 h-8 rounded-full grid place-items-center shrink-0"
             style={{ background: "linear-gradient(135deg,#D62828,#F77F00)" }}
@@ -169,56 +185,29 @@
             <div className="w-3 h-3 rounded-full bg-[#003049]" />
           </div>
 
-          {/* Tamaño fluido: se adapta de 24px a 40px */}
-          <h1 className="font-extrabold leading-none text-[clamp(24px,7vw,40px)]">
-            <span
-              style={{
-                fontWeight: 800,
-                color: "#ffcb05",
-                WebkitTextStroke: "2px #2a75bb",
-                textShadow: "2px 2px 6px rgba(0,0,0,0.5)"
-              }}
-            >
-              Poke
-            </span>
-            <span
-              style={{
-                fontWeight: 800,
-                color: "#2a75bb",
-                WebkitTextStroke: "1px #ffcb05",
-                textShadow: "2px 2px 6px rgba(0,0,0,0.5)"
-              }}
-            >
-              Rand
-            </span>
-            <span
-              style={{
-                fontWeight: 800,
-                color: "#ffcb05",
-                WebkitTextStroke: "2px #2a75bb",
-                textShadow: "2px 2px 6px rgba(0,0,0,0.5)"
-              }}
-            >
-              Up
-            </span>
+          {/* Tamaño fluido del título (sin romper la altura) */}
+          <h1 className="font-extrabold leading-none tracking-tight text-[clamp(22px,6.5vw,36px)]">
+            <span style={{ fontWeight: 800, color: "#ffcb05", WebkitTextStroke: "2px #2a75bb", textShadow: "2px 2px 6px rgba(0,0,0,.5)" }}>Poke</span>
+            <span style={{ fontWeight: 800, color: "#2a75bb", WebkitTextStroke: "1px #ffcb05", textShadow: "2px 2px 6px rgba(0,0,0,.5)" }}>Rand</span>
+            <span style={{ fontWeight: 800, color: "#ffcb05", WebkitTextStroke: "2px #2a75bb", textShadow: "2px 2px 6px rgba(0,0,0,.5)" }}>Up</span>
           </h1>
         </a>
 
-        {/* Navegación: pasa a la segunda línea y se alinea a la derecha en móvil */}
-        <div className="ml-auto w-full sm:w-auto flex items-center gap-2 justify-end">
+        {/* Navegación (misma altura que el header) */}
+        <nav className="ml-auto flex items-center gap-2">
           <a
             href="#/torneo"
-            className="rounded-full px-3 py-1 border border-gray-300 hover:bg-white/60 text-sm whitespace-nowrap"
+            className="inline-flex items-center justify-center h-9 px-3 rounded-full border border-gray-300 hover:bg-white/60 text-sm whitespace-nowrap"
           >
             Torneo
           </a>
           <a
             href="#/"
-            className="rounded-full px-3 py-1 border border-gray-300 hover:bg-white/60 text-sm whitespace-nowrap"
+            className="inline-flex items-center justify-center h-9 px-3 rounded-full border border-gray-300 hover:bg-white/60 text-sm whitespace-nowrap"
           >
             Pokédex
           </a>
-        </div>
+        </nav>
       </div>
     </header>
   );
@@ -969,13 +958,13 @@
 
     /* ======================= TORNEO (adaptado como ruta) ======================= */
     /* ======================= TORNEO (sin hero ni modo oscuro, look Pokédex) ======================= */
-/* ======================= TORNEO (sin hero ni modo oscuro, look Pokédex) ======================= */
-function Torneo() {
-  // Estilos propios del torneo (ligeros y en la línea de la Pokédex)
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.setAttribute('data-torneo-style', '1');
-    style.textContent = `
+    /* ======================= TORNEO (sin hero ni modo oscuro, look Pokédex) ======================= */
+    function Torneo() {
+      // Estilos propios del torneo (ligeros y en la línea de la Pokédex)
+      useEffect(() => {
+        const style = document.createElement('style');
+        style.setAttribute('data-torneo-style', '1');
+        style.textContent = `
 /* Paleta consistente con el proyecto base */
 :root { --accent:#2a75bb; --accent-soft:rgba(42,117,187,.08); --accent-strong:#2a75bb;
         --line:#e5e7eb; --muted:#64748b; --wire:#cbd5e1; --wire-strong:#2a75bb; }
@@ -1027,664 +1016,664 @@ canvas{ max-width:100%; height:auto; }
 /* Toast */
 #tr_toast .bubble{ box-shadow:0 10px 30px rgba(2,6,23,.25); }
     `;
-    document.head.appendChild(style);
-    return () => { style.remove(); };
-  }, []);
+        document.head.appendChild(style);
+        return () => { style.remove(); };
+      }, []);
 
-  // Lógica del torneo (mismo comportamiento, sin tema oscuro ni “hero”)
-  useEffect(() => {
-    const DEFAULT_PLAYERS = [
-      { name: "CeszarW", active: true },
-      { name: "Gabry", active: true },
-      { name: "SotoR713", active: true },
-      { name: "Jebuu(el negro)", active: true },
-      { name: "Piri", active: true },
-      { name: "Adair", active: true },
-    ];
-    const LS_KEY = 'players_ruleta_tournament_tailwind_v1';
-    let players = JSON.parse(localStorage.getItem(LS_KEY) || 'null') || DEFAULT_PLAYERS.slice();
-    let recent = [];
+      // Lógica del torneo (mismo comportamiento, sin tema oscuro ni “hero”)
+      useEffect(() => {
+        const DEFAULT_PLAYERS = [
+          { name: "CeszarW", active: true },
+          { name: "Gabry", active: true },
+          { name: "SotoR713", active: true },
+          { name: "Jebuu(el negro)", active: true },
+          { name: "Piri", active: true },
+          { name: "Adair", active: true },
+        ];
+        const LS_KEY = 'players_ruleta_tournament_tailwind_v1';
+        let players = JSON.parse(localStorage.getItem(LS_KEY) || 'null') || DEFAULT_PLAYERS.slice();
+        let recent = [];
 
-    // Refs DOM
-    const bracketCols = document.getElementById('tr_bracketCols');
-    const bracketLines = document.getElementById('tr_bracketLines');
-    const bracketScroll = document.getElementById('tr_bracketScroll');
-    const championBox = document.getElementById('tr_championBox');
-    const genBracketBtn = document.getElementById('tr_genBracketBtn');
-    const resetBracketBtn = document.getElementById('tr_resetBracketBtn');
-    const editModeChk = document.getElementById('tr_editModeChk');
+        // Refs DOM
+        const bracketCols = document.getElementById('tr_bracketCols');
+        const bracketLines = document.getElementById('tr_bracketLines');
+        const bracketScroll = document.getElementById('tr_bracketScroll');
+        const championBox = document.getElementById('tr_championBox');
+        const genBracketBtn = document.getElementById('tr_genBracketBtn');
+        const resetBracketBtn = document.getElementById('tr_resetBracketBtn');
+        const editModeChk = document.getElementById('tr_editModeChk');
 
-    const chipZone = document.getElementById('tr_chipZone');
-    const nameListEl = document.getElementById('tr_nameList');
-    const newNameEl = document.getElementById('tr_newName');
-    const addBtn = document.getElementById('tr_addBtn');
-    const resetBtn = document.getElementById('tr_resetBtn');
-    const clearBtn = document.getElementById('tr_clearBtn');
-    const activeCountEl = document.getElementById('tr_activeCount');
+        const chipZone = document.getElementById('tr_chipZone');
+        const nameListEl = document.getElementById('tr_nameList');
+        const newNameEl = document.getElementById('tr_newName');
+        const addBtn = document.getElementById('tr_addBtn');
+        const resetBtn = document.getElementById('tr_resetBtn');
+        const clearBtn = document.getElementById('tr_clearBtn');
+        const activeCountEl = document.getElementById('tr_activeCount');
 
-    const wheelCanvas = document.getElementById('tr_wheel');
-    const ctx = wheelCanvas.getContext('2d');
-    const spinBtn = document.getElementById('tr_spinBtn');
-    const recentTags = document.getElementById('tr_recentTags');
+        const wheelCanvas = document.getElementById('tr_wheel');
+        const ctx = wheelCanvas.getContext('2d');
+        const spinBtn = document.getElementById('tr_spinBtn');
+        const recentTags = document.getElementById('tr_recentTags');
 
-    const toastEl = document.getElementById('tr_toast');
-    const toastBody = document.getElementById('tr_toastBody');
-    function flash(m){
-      toastBody.textContent = m;
-      toastEl.classList.remove('hidden','opacity-0');
-      toastEl.classList.add('opacity-100');
-      setTimeout(()=>{ toastEl.classList.add('hidden'); }, 1400);
-    }
-    function savePlayers(){ localStorage.setItem(LS_KEY, JSON.stringify(players)); }
-    function getActivePlayers(){ return players.filter(p=>p.active).map(p=>p.name); }
-
-    /* 🎊 Confeti minimalista (canvas + requestAnimationFrame) */
-    function confettiBurst({
-      x = innerWidth / 2,
-      y = innerHeight / 4,
-      particles = 140,
-      spread = 90,
-      decay = 0.89,
-      scalar = 1
-    } = {}) {
-      const c = document.createElement('canvas');
-      Object.assign(c.style, {
-        position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: 9999
-      });
-      document.body.appendChild(c);
-      const g = c.getContext('2d');
-      const resize = () => { c.width = innerWidth; c.height = innerHeight; };
-      resize();
-      const toRad = Math.PI / 180;
-      const colors = ['#ffcb05', '#2a75bb', '#f59e0b', '#10b981', '#ef4444', '#3b82f6'];
-      const parts = Array.from({ length: particles }, () => ({
-        x, y,
-        angle: (-spread / 2) + Math.random() * spread,
-        v: 8 + Math.random() * 6,
-        size: (4 + Math.random() * 6) * scalar,
-        rot: Math.random() * 360,
-        rotSpd: (Math.random() * 20 - 10),
-        color: colors[(Math.random() * colors.length) | 0],
-        alpha: 1
-      }));
-      const gravity = 0.25, drag = 0.005;
-      function frame() {
-        g.clearRect(0, 0, c.width, c.height);
-        for (let i = parts.length - 1; i >= 0; i--) {
-          const p = parts[i];
-          p.v *= 1 - drag;
-          p.x += Math.cos(p.angle * toRad) * p.v;
-          p.y += Math.sin(p.angle * toRad) * p.v + gravity;
-          p.rot += p.rotSpd;
-          p.alpha *= decay;
-          if (p.alpha <= 0.02 || p.y > c.height + 20) { parts.splice(i, 1); continue; }
-          g.save();
-          g.globalAlpha = p.alpha;
-          g.translate(p.x, p.y);
-          g.rotate(p.rot * toRad);
-          g.fillStyle = p.color;
-          g.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-          g.restore();
+        const toastEl = document.getElementById('tr_toast');
+        const toastBody = document.getElementById('tr_toastBody');
+        function flash(m) {
+          toastBody.textContent = m;
+          toastEl.classList.remove('hidden', 'opacity-0');
+          toastEl.classList.add('opacity-100');
+          setTimeout(() => { toastEl.classList.add('hidden'); }, 1400);
         }
-        if (parts.length) requestAnimationFrame(frame);
-        else c.remove();
-      }
-      requestAnimationFrame(frame);
-      addEventListener('resize', resize, { once: true });
-    }
+        function savePlayers() { localStorage.setItem(LS_KEY, JSON.stringify(players)); }
+        function getActivePlayers() { return players.filter(p => p.active).map(p => p.name); }
 
-    /* 🎊 Lluvia de confeti: cae desde arriba, mucha cantidad y piezas grandes */
-function confettiRain({
-  x0 = 0,                 // desde qué X (viewport)
-  x1 = innerWidth,        // hasta qué X (viewport)
-  y0 = -40,               // arranque por encima del viewport
-  count = 900,            // MUCHO confeti
-  sizeMin = 10,           // piezas grandes
-  sizeMax = 24,
-  gravity = 0.45,         // caída rápida
-  wind = 0.9,             // deriva horizontal
-  decay = 0.996           // vida de las piezas
-} = {}) {
-  const c = document.createElement('canvas');
-  Object.assign(c.style, {
-    position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: 9999
-  });
-  document.body.appendChild(c);
-  const g = c.getContext('2d');
-
-  const resize = () => { c.width = innerWidth; c.height = innerHeight; };
-  resize();
-
-  const colors = ['#ffcb05','#2a75bb','#f59e0b','#10b981','#ef4444','#a855f7','#3b82f6','#fb7185'];
-  const toRad = Math.PI/180;
-
-  const parts = Array.from({ length: count }, () => {
-    const w = sizeMin + Math.random()*(sizeMax - sizeMin);
-    return {
-      x: x0 + Math.random()*(x1 - x0),
-      y: y0 - Math.random()*120,
-      vx: (Math.random()*2 - 1) * wind,   // deriva a izquierda/derecha
-      vy: 2 + Math.random()*3,
-      size: w,
-      rot: Math.random()*360,
-      rotSpd: (Math.random()*8 - 4),
-      color: colors[(Math.random()*colors.length)|0],
-      alpha: 1
-    };
-  });
-
-  function frame() {
-    g.clearRect(0,0,c.width,c.height);
-    for (let i = parts.length - 1; i >= 0; i--) {
-      const p = parts[i];
-      p.vy += gravity * 0.5;
-      p.x  += p.vx + Math.sin((p.y + p.rot) * 0.02) * 0.6; // leve serpenteo
-      p.y  += p.vy;
-      p.rot += p.rotSpd;
-      p.alpha *= decay;
-
-      if (p.y > c.height + 40 || p.alpha < 0.03) { parts.splice(i,1); continue; }
-
-      g.save();
-      g.globalAlpha = p.alpha;
-      g.translate(p.x, p.y);
-      g.rotate(p.rot * toRad);
-      g.fillStyle = p.color;
-      // rectángulos “papelitos”
-      g.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.55);
-      g.restore();
-    }
-    if (parts.length) requestAnimationFrame(frame);
-    else c.remove();
-  }
-  requestAnimationFrame(frame);
-  addEventListener('resize', resize, { once: true });
-}
-
-
-    /* Participantes */
-    function renderChips(){
-      chipZone.innerHTML = '';
-      players.forEach(p=>{
-        const chip = document.createElement('label'); chip.className='chip';
-        const chk = document.createElement('input'); chk.type='checkbox'; chk.checked=p.active;
-        chk.addEventListener('change',()=>{ p.active=chk.checked; savePlayers(); updateActiveCount(); drawWheel(); });
-        chip.appendChild(chk); chip.appendChild(document.createTextNode(' '+p.name));
-        chipZone.appendChild(chip);
-      });
-    }
-    function renderList(){
-      nameListEl.innerHTML='';
-      players.forEach((p,i)=>{
-        const row = document.createElement('div'); row.className='flex items-center justify-between';
-        const left = document.createElement('div'); left.className='flex items-center gap-2';
-        const badge = document.createElement('span'); badge.className='inline-flex items-center justify-center w-6 h-6 text-xs font-medium rounded-md bg-gray-100 border border-gray-300'; badge.textContent=i+1;
-        left.appendChild(badge); left.appendChild(document.createTextNode(p.name));
-        const tools = document.createElement('div'); tools.className='flex gap-1';
-        tools.append(btn('↑',()=>{ if(i>0){ [players[i-1],players[i]]=[players[i],players[i-1]]; savePlayers(); refreshPeople(); drawWheel(); }}));
-        tools.append(btn('↓',()=>{ if(i<players.length-1){ [players[i+1],players[i]]=[players[i],players[i+1]]; savePlayers(); refreshPeople(); drawWheel(); }}));
-        tools.append(btn('✕',()=>{ players.splice(i,1); savePlayers(); refreshPeople(); drawWheel(); }));
-        row.append(left, tools);
-        nameListEl.appendChild(row);
-      });
-      updateActiveCount();
-    }
-    function btn(text,fn){
-      const b=document.createElement('button');
-      b.className='px-2 py-1 rounded-lg border border-gray-300 text-gray-700 hover:bg-white text-sm';
-      b.textContent=text; b.addEventListener('click',fn); return b;
-    }
-    function updateActiveCount(){ activeCountEl.textContent=getActivePlayers().length; }
-    function onAdd(){
-      const name=(newNameEl.value||'').trim(); if(!name) return;
-      if(players.some(p=>p.name.toLowerCase()===name.toLowerCase())){ flash('Ese nombre ya existe.'); return; }
-      players.push({name,active:true}); newNameEl.value=''; savePlayers(); refreshPeople(); drawWheel();
-    }
-    function refreshPeople(){ renderChips(); renderList(); }
-
-    /* Ruleta */
-    let wheelRotation=0, spinning=false;
-    function randColor(i,n){ const h=Math.floor((360/n)*i); return `hsl(${h} 70% 45%)`; }
-    function drawWheel(){
-      const names=getActivePlayers(); const W=wheelCanvas.width,H=wheelCanvas.height;
-      const cx=W/2, cy=H/2, r=Math.min(W,H)/2-10;
-      ctx.clearRect(0,0,W,H); ctx.save(); ctx.translate(cx,cy); ctx.rotate(wheelRotation);
-      if(!names.length){ ctx.fillStyle='#e5e7eb'; ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#6b7280'; ctx.font='16px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('Sin participantes',0,0); ctx.restore(); return; }
-      const arc=(Math.PI*2)/names.length;
-      for(let i=0;i<names.length;i++){
-        ctx.beginPath(); ctx.moveTo(0,0); ctx.fillStyle=randColor(i,names.length); ctx.arc(0,0,r,i*arc,(i+1)*arc); ctx.closePath(); ctx.fill();
-        ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
-        ctx.save(); ctx.rotate(i*arc+arc/2); ctx.translate(r*.7,0); ctx.rotate(Math.PI/2);
-        ctx.fillStyle='rgba(255,255,255,.92)'; ctx.fillRect(-r*.26,-14,r*.52,28);
-        ctx.fillStyle='#111827'; ctx.font='14px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
-        const label=names[i].length>18?names[i].slice(0,18)+'…':names[i]; ctx.fillText(label,0,0); ctx.restore();
-      }
-      ctx.beginPath(); ctx.fillStyle='white'; ctx.arc(0,0,42,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#e5e7eb'; ctx.lineWidth=4; ctx.stroke(); ctx.restore();
-    }
-    function spin(){
-      const names=getActivePlayers(); if(spinning) return; if(names.length<2){ flash('Necesitas al menos 2 activos para girar.'); return; }
-      spinning=true; const duration=4000+Math.random()*3000, start=performance.now();
-      const startRot=wheelRotation, extra=8+Math.random()*6, finalRot=startRot+extra*2*Math.PI+Math.random()*2*Math.PI;
-      const ease=t=>1-Math.pow(1-t,3);
-      function frame(now){ const t=Math.min(1,(now-start)/duration); wheelRotation=startRot+(finalRot-startRot)*ease(t); drawWheel(); if(t<1) requestAnimationFrame(frame); else{ spinning=false; announceWinner(); } }
-      requestAnimationFrame(frame);
-    }
-    function announceWinner(){
-      const names=getActivePlayers(); const arc=(Math.PI*2)/names.length;
-      const normalized=(2*Math.PI-(wheelRotation%(2*Math.PI)))%(2*Math.PI);
-      let idx=Math.floor(normalized/arc); if(idx<0) idx=0; if(idx>=names.length) idx=names.length-1;
-      const picked=names[idx]; recent.unshift(picked); if(recent.length>8) recent.pop();
-      recentTags.innerHTML='';
-      recent.forEach(n=>{
-        const s=document.createElement('span');
-        s.className='px-2 py-0.5 rounded-lg bg-gray-100 border border-gray-300 text-gray-700 text-sm';
-        s.textContent=n; recentTags.appendChild(s);
-      });
-      flash('Seleccionado: '+picked);
-
-      // 🎊 Confeti a la derecha del canvas (como tu UI indica)
-      const r = wheelCanvas.getBoundingClientRect();
-      confettiBurst({
-        x: r.right - 8,
-        y: r.top + r.height / 2,
-        particles: 160,
-        spread: 120,
-        scalar: 1.1
-      });
-    }
-
-    /* Bracket */
-    let bracketRounds=[]; // [{p1,p2,winner,code}]
-    let editMode=false;
-    let animateNextDraw=false;
-
-    function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
-    function nextPow2(n){ return Math.pow(2, Math.ceil(Math.log2(n))); }
-    function codeFor(roundIdx, matchIdx, totalRounds){
-      if(roundIdx===0) return 'M'+(matchIdx+1);
-      if(roundIdx===totalRounds-2) return 'SF'+(matchIdx+1);
-      if(roundIdx===totalRounds-1) return 'F';
-      return `R${roundIdx+1}-${matchIdx+1}`;
-    }
-
-    function generateBracket(){
-      const names=getActivePlayers();
-      if(names.length<2){ flash('Se requieren al menos 2 activos.'); return; }
-      if(names.length>32){ flash('Máximo 32 participantes.'); return; }
-
-      const P=nextPow2(names.length);
-      const entries=names.slice();
-      for(let i=0;i<P-names.length;i++) entries.push('BYE');
-      shuffle(entries);
-
-      const r1=[];
-      for(let i=0;i<entries.length;i+=2) r1.push({p1:entries[i], p2:entries[i+1], winner:null});
-      bracketRounds=[r1];
-
-      let m=r1.length;
-      while(m>1){ m=Math.floor(m/2); bracketRounds.push(Array.from({length:m},()=>({p1:null,p2:null,winner:null}))); }
-
-      for(let r=0;r<bracketRounds.length;r++)
-        for(let i=0;i<bracketRounds[r].length;i++)
-          bracketRounds[r][i].code = codeFor(r,i,bracketRounds.length);
-
-      autoAdvanceByes(0);
-      renderBracket();
-      championBox.innerHTML='';
-      animateNextDraw=true;
-    }
-
-    function autoAdvanceByes(rIdx){
-      const round=bracketRounds[rIdx];
-      for(let i=0;i<round.length;i++){
-        const m=round[i];
-        const hasBye=(m.p1==='BYE'&&m.p2!=='BYE')||(m.p2==='BYE'&&m.p1!=='BYE');
-        if(hasBye){ m.winner = m.p1==='BYE'? m.p2 : m.p1; placeWinner(rIdx,i,m.winner); }
-        else if(m.p1==='BYE'&&m.p2==='BYE'){ m.winner='BYE'; placeWinner(rIdx,i,m.winner); }
-      }
-    }
-
-    function placeWinner(rIdx, mIdx, name){
-      const next=bracketRounds[rIdx+1]; if(!next) return;
-      const target=Math.floor(mIdx/2);
-      if(mIdx%2===0) next[target].p1=name; else next[target].p2=name;
-
-      const m=next[target];
-      if(m.p1 && m.p2){
-        const bye=(m.p1==='BYE'&&m.p2!=='BYE')||(m.p2==='BYE'&&m.p1!=='BYE');
-        if(bye){ m.winner = m.p1==='BYE'? m.p2 : m.p1; placeWinner(rIdx+1,target,m.winner); }
-        else if(m.p1==='BYE'&&m.p2==='BYE'){ m.winner='BYE'; placeWinner(rIdx+1,target,m.winner); }
-      }
-    }
-
-    function renderBracket(){
-      bracketCols.innerHTML='';
-      if(!bracketRounds.length){ bracketLines.innerHTML=''; return; }
-
-      bracketRounds.forEach((round,rIdx)=>{
-        const col=document.createElement('div'); col.className='bracket-col'; col.id=`tr_col-r${rIdx}`;
-        const title=document.createElement('div'); title.className='col-title font-bold text-gray-800 mb-1';
-        title.textContent=(rIdx===bracketRounds.length-1)?'Final':(rIdx===bracketRounds.length-2?'Semifinales':(rIdx===0?'Ronda 1':`Ronda ${rIdx+1}`));
-        col.appendChild(title);
-
-        round.forEach((m,mIdx)=>{
-          const match=document.createElement('div'); match.className='match'; match.id=`tr_match-r${rIdx}-m${mIdx}`;
-          const top = slotEl(rIdx,mIdx,'p1', m.p1, m.winner===m.p1);
-          const bot = slotEl(rIdx,mIdx,'p2', m.p2, m.winner===m.p2);
-          match.appendChild(top); match.appendChild(bot);
-          col.appendChild(match);
-        });
-
-        bracketCols.appendChild(col);
-      });
-
-      alignMatchesToMidpoints();
-      updateChampion();
-      window.requestAnimationFrame(drawConnections);
-    }
-
-    function alignMatchesToMidpoints(){
-      if(!bracketRounds.length) return;
-      const first = document.getElementById('tr_col-r0');
-      const firstH = first ? first.getBoundingClientRect().height : 0;
-
-      for(let r=0;r<bracketRounds.length;r++){
-        const col = document.getElementById(`tr_col-r${r}`);
-        col.style.position='relative';
-        if(firstH) col.style.minHeight = firstH + 'px';
-
-        bracketRounds[r].forEach((_,i)=>{
-          const el = document.getElementById(`tr_match-r${r}-m${i}`);
-          if(r===0){ el.style.position='static'; el.style.top=''; }
-          else{ el.style.position='absolute'; el.style.left='0'; el.style.right='0'; }
-        });
-
-        if(r===0) continue;
-
-        const colRect = document.getElementById(`tr_col-r${r}`).getBoundingClientRect();
-        for(let i=0;i<bracketRounds[r].length;i++){
-          const srcA = document.getElementById(`tr_match-r${r-1}-m${i*2}`);
-          const srcB = document.getElementById(`tr_match-r${r-1}-m${i*2+1}`);
-          const dst  = document.getElementById(`tr_match-r${r}-m${i}`);
-          if(!(srcA && srcB && dst)) continue;
-
-          const a = srcA.getBoundingClientRect();
-          const b = srcB.getBoundingClientRect();
-          const midY = ((a.top + a.height/2) + (b.top + b.height/2)) / 2;
-
-          const top = midY - colRect.top - (dst.offsetHeight/2);
-          dst.style.top = `${top}px`;
+        /* 🎊 Confeti minimalista (canvas + requestAnimationFrame) */
+        function confettiBurst({
+          x = innerWidth / 2,
+          y = innerHeight / 4,
+          particles = 140,
+          spread = 90,
+          decay = 0.89,
+          scalar = 1
+        } = {}) {
+          const c = document.createElement('canvas');
+          Object.assign(c.style, {
+            position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: 9999
+          });
+          document.body.appendChild(c);
+          const g = c.getContext('2d');
+          const resize = () => { c.width = innerWidth; c.height = innerHeight; };
+          resize();
+          const toRad = Math.PI / 180;
+          const colors = ['#ffcb05', '#2a75bb', '#f59e0b', '#10b981', '#ef4444', '#3b82f6'];
+          const parts = Array.from({ length: particles }, () => ({
+            x, y,
+            angle: (-spread / 2) + Math.random() * spread,
+            v: 8 + Math.random() * 6,
+            size: (4 + Math.random() * 6) * scalar,
+            rot: Math.random() * 360,
+            rotSpd: (Math.random() * 20 - 10),
+            color: colors[(Math.random() * colors.length) | 0],
+            alpha: 1
+          }));
+          const gravity = 0.25, drag = 0.005;
+          function frame() {
+            g.clearRect(0, 0, c.width, c.height);
+            for (let i = parts.length - 1; i >= 0; i--) {
+              const p = parts[i];
+              p.v *= 1 - drag;
+              p.x += Math.cos(p.angle * toRad) * p.v;
+              p.y += Math.sin(p.angle * toRad) * p.v + gravity;
+              p.rot += p.rotSpd;
+              p.alpha *= decay;
+              if (p.alpha <= 0.02 || p.y > c.height + 20) { parts.splice(i, 1); continue; }
+              g.save();
+              g.globalAlpha = p.alpha;
+              g.translate(p.x, p.y);
+              g.rotate(p.rot * toRad);
+              g.fillStyle = p.color;
+              g.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+              g.restore();
+            }
+            if (parts.length) requestAnimationFrame(frame);
+            else c.remove();
+          }
+          requestAnimationFrame(frame);
+          addEventListener('resize', resize, { once: true });
         }
-      }
-    }
 
-    function slotEl(rIdx,mIdx,which,value,isWinner){
-      const id = `tr_slot-r${rIdx}-m${mIdx}-${which}`;
+        /* 🎊 Lluvia de confeti: cae desde arriba, mucha cantidad y piezas grandes */
+        function confettiRain({
+          x0 = 0,                 // desde qué X (viewport)
+          x1 = innerWidth,        // hasta qué X (viewport)
+          y0 = -40,               // arranque por encima del viewport
+          count = 900,            // MUCHO confeti
+          sizeMin = 10,           // piezas grandes
+          sizeMax = 24,
+          gravity = 0.45,         // caída rápida
+          wind = 0.9,             // deriva horizontal
+          decay = 0.996           // vida de las piezas
+        } = {}) {
+          const c = document.createElement('canvas');
+          Object.assign(c.style, {
+            position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: 9999
+          });
+          document.body.appendChild(c);
+          const g = c.getContext('2d');
 
-      if(editMode && rIdx===0){
-        const wrap=document.createElement('div'); wrap.className='slot select'; wrap.id=id;
-        const sel=document.createElement('select'); sel.className='w-full rounded-lg border border-gray-300 bg-white px-2 py-2 focus:outline-none focus:ring-2 focus:ring-[#2a75bb]';
-        const opts=['','BYE',...getActivePlayers()];
-        opts.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v||'— vacío —'; if(v===value) o.selected=true; sel.appendChild(o); });
-        sel.addEventListener('change', ()=> setSlotR1(mIdx, which, sel.value || null));
-        wrap.appendChild(sel); return wrap;
-      }
+          const resize = () => { c.width = innerWidth; c.height = innerHeight; };
+          resize();
 
-      const btn=document.createElement('button'); btn.className='slot'; btn.id=id;
-      if(value==null && rIdx>0){ btn.textContent=''; btn.disabled=true; btn.classList.add('pending'); }
-      else{ btn.textContent=value ?? '¿Pendiente?'; }
-      if(value==='BYE'){ btn.classList.add('bye'); btn.disabled=true; }
-      if(isWinner) btn.classList.add('winner');
+          const colors = ['#ffcb05', '#2a75bb', '#f59e0b', '#10b981', '#ef4444', '#a855f7', '#3b82f6', '#fb7185'];
+          const toRad = Math.PI / 180;
 
-      if(value && value!=='BYE'){
-        btn.addEventListener('click', ()=>{
-          const m = bracketRounds[rIdx][mIdx];
-          m.winner = (which==='p1') ? m.p1 : m.p2;
-          placeWinner(rIdx,mIdx,m.winner);
+          const parts = Array.from({ length: count }, () => {
+            const w = sizeMin + Math.random() * (sizeMax - sizeMin);
+            return {
+              x: x0 + Math.random() * (x1 - x0),
+              y: y0 - Math.random() * 120,
+              vx: (Math.random() * 2 - 1) * wind,   // deriva a izquierda/derecha
+              vy: 2 + Math.random() * 3,
+              size: w,
+              rot: Math.random() * 360,
+              rotSpd: (Math.random() * 8 - 4),
+              color: colors[(Math.random() * colors.length) | 0],
+              alpha: 1
+            };
+          });
+
+          function frame() {
+            g.clearRect(0, 0, c.width, c.height);
+            for (let i = parts.length - 1; i >= 0; i--) {
+              const p = parts[i];
+              p.vy += gravity * 0.5;
+              p.x += p.vx + Math.sin((p.y + p.rot) * 0.02) * 0.6; // leve serpenteo
+              p.y += p.vy;
+              p.rot += p.rotSpd;
+              p.alpha *= decay;
+
+              if (p.y > c.height + 40 || p.alpha < 0.03) { parts.splice(i, 1); continue; }
+
+              g.save();
+              g.globalAlpha = p.alpha;
+              g.translate(p.x, p.y);
+              g.rotate(p.rot * toRad);
+              g.fillStyle = p.color;
+              // rectángulos “papelitos”
+              g.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.55);
+              g.restore();
+            }
+            if (parts.length) requestAnimationFrame(frame);
+            else c.remove();
+          }
+          requestAnimationFrame(frame);
+          addEventListener('resize', resize, { once: true });
+        }
+
+
+        /* Participantes */
+        function renderChips() {
+          chipZone.innerHTML = '';
+          players.forEach(p => {
+            const chip = document.createElement('label'); chip.className = 'chip';
+            const chk = document.createElement('input'); chk.type = 'checkbox'; chk.checked = p.active;
+            chk.addEventListener('change', () => { p.active = chk.checked; savePlayers(); updateActiveCount(); drawWheel(); });
+            chip.appendChild(chk); chip.appendChild(document.createTextNode(' ' + p.name));
+            chipZone.appendChild(chip);
+          });
+        }
+        function renderList() {
+          nameListEl.innerHTML = '';
+          players.forEach((p, i) => {
+            const row = document.createElement('div'); row.className = 'flex items-center justify-between';
+            const left = document.createElement('div'); left.className = 'flex items-center gap-2';
+            const badge = document.createElement('span'); badge.className = 'inline-flex items-center justify-center w-6 h-6 text-xs font-medium rounded-md bg-gray-100 border border-gray-300'; badge.textContent = i + 1;
+            left.appendChild(badge); left.appendChild(document.createTextNode(p.name));
+            const tools = document.createElement('div'); tools.className = 'flex gap-1';
+            tools.append(btn('↑', () => { if (i > 0) { [players[i - 1], players[i]] = [players[i], players[i - 1]]; savePlayers(); refreshPeople(); drawWheel(); } }));
+            tools.append(btn('↓', () => { if (i < players.length - 1) { [players[i + 1], players[i]] = [players[i], players[i + 1]]; savePlayers(); refreshPeople(); drawWheel(); } }));
+            tools.append(btn('✕', () => { players.splice(i, 1); savePlayers(); refreshPeople(); drawWheel(); }));
+            row.append(left, tools);
+            nameListEl.appendChild(row);
+          });
+          updateActiveCount();
+        }
+        function btn(text, fn) {
+          const b = document.createElement('button');
+          b.className = 'px-2 py-1 rounded-lg border border-gray-300 text-gray-700 hover:bg-white text-sm';
+          b.textContent = text; b.addEventListener('click', fn); return b;
+        }
+        function updateActiveCount() { activeCountEl.textContent = getActivePlayers().length; }
+        function onAdd() {
+          const name = (newNameEl.value || '').trim(); if (!name) return;
+          if (players.some(p => p.name.toLowerCase() === name.toLowerCase())) { flash('Ese nombre ya existe.'); return; }
+          players.push({ name, active: true }); newNameEl.value = ''; savePlayers(); refreshPeople(); drawWheel();
+        }
+        function refreshPeople() { renderChips(); renderList(); }
+
+        /* Ruleta */
+        let wheelRotation = 0, spinning = false;
+        function randColor(i, n) { const h = Math.floor((360 / n) * i); return `hsl(${h} 70% 45%)`; }
+        function drawWheel() {
+          const names = getActivePlayers(); const W = wheelCanvas.width, H = wheelCanvas.height;
+          const cx = W / 2, cy = H / 2, r = Math.min(W, H) / 2 - 10;
+          ctx.clearRect(0, 0, W, H); ctx.save(); ctx.translate(cx, cy); ctx.rotate(wheelRotation);
+          if (!names.length) { ctx.fillStyle = '#e5e7eb'; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#6b7280'; ctx.font = '16px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('Sin participantes', 0, 0); ctx.restore(); return; }
+          const arc = (Math.PI * 2) / names.length;
+          for (let i = 0; i < names.length; i++) {
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.fillStyle = randColor(i, names.length); ctx.arc(0, 0, r, i * arc, (i + 1) * arc); ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.save(); ctx.rotate(i * arc + arc / 2); ctx.translate(r * .7, 0); ctx.rotate(Math.PI / 2);
+            ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fillRect(-r * .26, -14, r * .52, 28);
+            ctx.fillStyle = '#111827'; ctx.font = '14px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            const label = names[i].length > 18 ? names[i].slice(0, 18) + '…' : names[i]; ctx.fillText(label, 0, 0); ctx.restore();
+          }
+          ctx.beginPath(); ctx.fillStyle = 'white'; ctx.arc(0, 0, 42, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 4; ctx.stroke(); ctx.restore();
+        }
+        function spin() {
+          const names = getActivePlayers(); if (spinning) return; if (names.length < 2) { flash('Necesitas al menos 2 activos para girar.'); return; }
+          spinning = true; const duration = 4000 + Math.random() * 3000, start = performance.now();
+          const startRot = wheelRotation, extra = 8 + Math.random() * 6, finalRot = startRot + extra * 2 * Math.PI + Math.random() * 2 * Math.PI;
+          const ease = t => 1 - Math.pow(1 - t, 3);
+          function frame(now) { const t = Math.min(1, (now - start) / duration); wheelRotation = startRot + (finalRot - startRot) * ease(t); drawWheel(); if (t < 1) requestAnimationFrame(frame); else { spinning = false; announceWinner(); } }
+          requestAnimationFrame(frame);
+        }
+        function announceWinner() {
+          const names = getActivePlayers(); const arc = (Math.PI * 2) / names.length;
+          const normalized = (2 * Math.PI - (wheelRotation % (2 * Math.PI))) % (2 * Math.PI);
+          let idx = Math.floor(normalized / arc); if (idx < 0) idx = 0; if (idx >= names.length) idx = names.length - 1;
+          const picked = names[idx]; recent.unshift(picked); if (recent.length > 8) recent.pop();
+          recentTags.innerHTML = '';
+          recent.forEach(n => {
+            const s = document.createElement('span');
+            s.className = 'px-2 py-0.5 rounded-lg bg-gray-100 border border-gray-300 text-gray-700 text-sm';
+            s.textContent = n; recentTags.appendChild(s);
+          });
+          flash('Seleccionado: ' + picked);
+
+          // 🎊 Confeti a la derecha del canvas (como tu UI indica)
+          const r = wheelCanvas.getBoundingClientRect();
+          confettiBurst({
+            x: r.right - 8,
+            y: r.top + r.height / 2,
+            particles: 160,
+            spread: 120,
+            scalar: 1.1
+          });
+        }
+
+        /* Bracket */
+        let bracketRounds = []; // [{p1,p2,winner,code}]
+        let editMode = false;
+        let animateNextDraw = false;
+
+        function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a; }
+        function nextPow2(n) { return Math.pow(2, Math.ceil(Math.log2(n))); }
+        function codeFor(roundIdx, matchIdx, totalRounds) {
+          if (roundIdx === 0) return 'M' + (matchIdx + 1);
+          if (roundIdx === totalRounds - 2) return 'SF' + (matchIdx + 1);
+          if (roundIdx === totalRounds - 1) return 'F';
+          return `R${roundIdx + 1}-${matchIdx + 1}`;
+        }
+
+        function generateBracket() {
+          const names = getActivePlayers();
+          if (names.length < 2) { flash('Se requieren al menos 2 activos.'); return; }
+          if (names.length > 32) { flash('Máximo 32 participantes.'); return; }
+
+          const P = nextPow2(names.length);
+          const entries = names.slice();
+          for (let i = 0; i < P - names.length; i++) entries.push('BYE');
+          shuffle(entries);
+
+          const r1 = [];
+          for (let i = 0; i < entries.length; i += 2) r1.push({ p1: entries[i], p2: entries[i + 1], winner: null });
+          bracketRounds = [r1];
+
+          let m = r1.length;
+          while (m > 1) { m = Math.floor(m / 2); bracketRounds.push(Array.from({ length: m }, () => ({ p1: null, p2: null, winner: null }))); }
+
+          for (let r = 0; r < bracketRounds.length; r++)
+            for (let i = 0; i < bracketRounds[r].length; i++)
+              bracketRounds[r][i].code = codeFor(r, i, bracketRounds.length);
+
+          autoAdvanceByes(0);
           renderBracket();
-        });
-      }
-      return btn;
-    }
+          championBox.innerHTML = '';
+          animateNextDraw = true;
+        }
 
-    function setSlotR1(mIdx, which, val){
-      const m = bracketRounds[0][mIdx];
-      m[which] = val || null;
-      m.winner = null;
-      for(let r=1;r<bracketRounds.length;r++)
-        bracketRounds[r].forEach(mm=>{ mm.p1=null; mm.p2=null; mm.winner=null; });
-      autoAdvanceByes(0);
-      renderBracket();
-      championBox.innerHTML='';
-    }
+        function autoAdvanceByes(rIdx) {
+          const round = bracketRounds[rIdx];
+          for (let i = 0; i < round.length; i++) {
+            const m = round[i];
+            const hasBye = (m.p1 === 'BYE' && m.p2 !== 'BYE') || (m.p2 === 'BYE' && m.p1 !== 'BYE');
+            if (hasBye) { m.winner = m.p1 === 'BYE' ? m.p2 : m.p1; placeWinner(rIdx, i, m.winner); }
+            else if (m.p1 === 'BYE' && m.p2 === 'BYE') { m.winner = 'BYE'; placeWinner(rIdx, i, m.winner); }
+          }
+        }
 
-  function updateChampion(){
-  const last = bracketRounds[bracketRounds.length - 1];
-  if(!last) return;
-  const f = last[0];
-  const hasChamp = (f && f.winner && f.winner !== 'BYE');
+        function placeWinner(rIdx, mIdx, name) {
+          const next = bracketRounds[rIdx + 1]; if (!next) return;
+          const target = Math.floor(mIdx / 2);
+          if (mIdx % 2 === 0) next[target].p1 = name; else next[target].p2 = name;
 
-  championBox.innerHTML = hasChamp
-    ? `<div class="mt-2 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-green-200 text-green-700">
+          const m = next[target];
+          if (m.p1 && m.p2) {
+            const bye = (m.p1 === 'BYE' && m.p2 !== 'BYE') || (m.p2 === 'BYE' && m.p1 !== 'BYE');
+            if (bye) { m.winner = m.p1 === 'BYE' ? m.p2 : m.p1; placeWinner(rIdx + 1, target, m.winner); }
+            else if (m.p1 === 'BYE' && m.p2 === 'BYE') { m.winner = 'BYE'; placeWinner(rIdx + 1, target, m.winner); }
+          }
+        }
+
+        function renderBracket() {
+          bracketCols.innerHTML = '';
+          if (!bracketRounds.length) { bracketLines.innerHTML = ''; return; }
+
+          bracketRounds.forEach((round, rIdx) => {
+            const col = document.createElement('div'); col.className = 'bracket-col'; col.id = `tr_col-r${rIdx}`;
+            const title = document.createElement('div'); title.className = 'col-title font-bold text-gray-800 mb-1';
+            title.textContent = (rIdx === bracketRounds.length - 1) ? 'Final' : (rIdx === bracketRounds.length - 2 ? 'Semifinales' : (rIdx === 0 ? 'Ronda 1' : `Ronda ${rIdx + 1}`));
+            col.appendChild(title);
+
+            round.forEach((m, mIdx) => {
+              const match = document.createElement('div'); match.className = 'match'; match.id = `tr_match-r${rIdx}-m${mIdx}`;
+              const top = slotEl(rIdx, mIdx, 'p1', m.p1, m.winner === m.p1);
+              const bot = slotEl(rIdx, mIdx, 'p2', m.p2, m.winner === m.p2);
+              match.appendChild(top); match.appendChild(bot);
+              col.appendChild(match);
+            });
+
+            bracketCols.appendChild(col);
+          });
+
+          alignMatchesToMidpoints();
+          updateChampion();
+          window.requestAnimationFrame(drawConnections);
+        }
+
+        function alignMatchesToMidpoints() {
+          if (!bracketRounds.length) return;
+          const first = document.getElementById('tr_col-r0');
+          const firstH = first ? first.getBoundingClientRect().height : 0;
+
+          for (let r = 0; r < bracketRounds.length; r++) {
+            const col = document.getElementById(`tr_col-r${r}`);
+            col.style.position = 'relative';
+            if (firstH) col.style.minHeight = firstH + 'px';
+
+            bracketRounds[r].forEach((_, i) => {
+              const el = document.getElementById(`tr_match-r${r}-m${i}`);
+              if (r === 0) { el.style.position = 'static'; el.style.top = ''; }
+              else { el.style.position = 'absolute'; el.style.left = '0'; el.style.right = '0'; }
+            });
+
+            if (r === 0) continue;
+
+            const colRect = document.getElementById(`tr_col-r${r}`).getBoundingClientRect();
+            for (let i = 0; i < bracketRounds[r].length; i++) {
+              const srcA = document.getElementById(`tr_match-r${r - 1}-m${i * 2}`);
+              const srcB = document.getElementById(`tr_match-r${r - 1}-m${i * 2 + 1}`);
+              const dst = document.getElementById(`tr_match-r${r}-m${i}`);
+              if (!(srcA && srcB && dst)) continue;
+
+              const a = srcA.getBoundingClientRect();
+              const b = srcB.getBoundingClientRect();
+              const midY = ((a.top + a.height / 2) + (b.top + b.height / 2)) / 2;
+
+              const top = midY - colRect.top - (dst.offsetHeight / 2);
+              dst.style.top = `${top}px`;
+            }
+          }
+        }
+
+        function slotEl(rIdx, mIdx, which, value, isWinner) {
+          const id = `tr_slot-r${rIdx}-m${mIdx}-${which}`;
+
+          if (editMode && rIdx === 0) {
+            const wrap = document.createElement('div'); wrap.className = 'slot select'; wrap.id = id;
+            const sel = document.createElement('select'); sel.className = 'w-full rounded-lg border border-gray-300 bg-white px-2 py-2 focus:outline-none focus:ring-2 focus:ring-[#2a75bb]';
+            const opts = ['', 'BYE', ...getActivePlayers()];
+            opts.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v || '— vacío —'; if (v === value) o.selected = true; sel.appendChild(o); });
+            sel.addEventListener('change', () => setSlotR1(mIdx, which, sel.value || null));
+            wrap.appendChild(sel); return wrap;
+          }
+
+          const btn = document.createElement('button'); btn.className = 'slot'; btn.id = id;
+          if (value == null && rIdx > 0) { btn.textContent = ''; btn.disabled = true; btn.classList.add('pending'); }
+          else { btn.textContent = value ?? '¿Pendiente?'; }
+          if (value === 'BYE') { btn.classList.add('bye'); btn.disabled = true; }
+          if (isWinner) btn.classList.add('winner');
+
+          if (value && value !== 'BYE') {
+            btn.addEventListener('click', () => {
+              const m = bracketRounds[rIdx][mIdx];
+              m.winner = (which === 'p1') ? m.p1 : m.p2;
+              placeWinner(rIdx, mIdx, m.winner);
+              renderBracket();
+            });
+          }
+          return btn;
+        }
+
+        function setSlotR1(mIdx, which, val) {
+          const m = bracketRounds[0][mIdx];
+          m[which] = val || null;
+          m.winner = null;
+          for (let r = 1; r < bracketRounds.length; r++)
+            bracketRounds[r].forEach(mm => { mm.p1 = null; mm.p2 = null; mm.winner = null; });
+          autoAdvanceByes(0);
+          renderBracket();
+          championBox.innerHTML = '';
+        }
+
+        function updateChampion() {
+          const last = bracketRounds[bracketRounds.length - 1];
+          if (!last) return;
+          const f = last[0];
+          const hasChamp = (f && f.winner && f.winner !== 'BYE');
+
+          championBox.innerHTML = hasChamp
+            ? `<div class="mt-2 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-green-200 text-green-700">
          🏆 <span><b>Campeón:</b> ${escapeHtml(f.winner)}</span>
        </div>`
-    : '';
+            : '';
 
-  if (hasChamp) {
-    // 📍 área del cartel de campeón (llueve por encima de esa zona)
-    const box = championBox.getBoundingClientRect();
+          if (hasChamp) {
+            // 📍 área del cartel de campeón (llueve por encima de esa zona)
+            const box = championBox.getBoundingClientRect();
 
-    // Oleada 1: muy densa y piezas grandes
-    confettiRain({
-      x0: Math.max(0, box.left - 80),
-      x1: Math.min(innerWidth, box.right + 80),
-      y0: -40,
-      count: 950,
-      sizeMin: 12,
-      sizeMax: 26,
-      gravity: 0.48,
-      wind: 1.0,
-      decay: 0.996
-    });
+            // Oleada 1: muy densa y piezas grandes
+            confettiRain({
+              x0: Math.max(0, box.left - 80),
+              x1: Math.min(innerWidth, box.right + 80),
+              y0: -40,
+              count: 950,
+              sizeMin: 12,
+              sizeMax: 26,
+              gravity: 0.48,
+              wind: 1.0,
+              decay: 0.996
+            });
 
-    // Oleada 2 (ligero retardo): refuerzo para que “llueva más”
-    setTimeout(() => {
-      confettiRain({
-        x0: Math.max(0, box.left - 140),
-        x1: Math.min(innerWidth, box.right + 140),
-        y0: -60,
-        count: 700,
-        sizeMin: 10,
-        sizeMax: 22,
-        gravity: 0.46,
-        wind: 0.9,
-        decay: 0.997
-      });
-    }, 260);
-  }
-}
+            // Oleada 2 (ligero retardo): refuerzo para que “llueva más”
+            setTimeout(() => {
+              confettiRain({
+                x0: Math.max(0, box.left - 140),
+                x1: Math.min(innerWidth, box.right + 140),
+                y0: -60,
+                count: 700,
+                sizeMin: 10,
+                sizeMax: 22,
+                gravity: 0.46,
+                wind: 0.9,
+                decay: 0.997
+              });
+            }, 260);
+          }
+        }
 
 
 
-    function drawConnections(){
-      bracketLines.innerHTML='';
-      const colsCount = bracketRounds.length;
-      if(colsCount<2) return;
+        function drawConnections() {
+          bracketLines.innerHTML = '';
+          const colsCount = bracketRounds.length;
+          if (colsCount < 2) return;
 
-      const wrapRect = bracketScroll.getBoundingClientRect();
+          const wrapRect = bracketScroll.getBoundingClientRect();
 
-      for(let r=0;r<colsCount-1;r++){
-        bracketRounds[r].forEach((match, i)=>{
-          const src = document.getElementById(`tr_match-r${r}-m${i}`);
-          const dstMatchIdx = Math.floor(i/2);
-          const dst = document.getElementById(`tr_match-r${r+1}-m${dstMatchIdx}`);
-          if(!src || !dst) return;
+          for (let r = 0; r < colsCount - 1; r++) {
+            bracketRounds[r].forEach((match, i) => {
+              const src = document.getElementById(`tr_match-r${r}-m${i}`);
+              const dstMatchIdx = Math.floor(i / 2);
+              const dst = document.getElementById(`tr_match-r${r + 1}-m${dstMatchIdx}`);
+              if (!src || !dst) return;
 
-          const sA = src.getBoundingClientRect();
-          const mateIdx = (i%2===0)? i+1 : i-1;
-          const mate = document.getElementById(`tr_match-r${r}-m${mateIdx}`);
-          const sB = (mate? mate.getBoundingClientRect() : sA);
+              const sA = src.getBoundingClientRect();
+              const mateIdx = (i % 2 === 0) ? i + 1 : i - 1;
+              const mate = document.getElementById(`tr_match-r${r}-m${mateIdx}`);
+              const sB = (mate ? mate.getBoundingClientRect() : sA);
 
-          const dstSlotId = `tr_slot-r${r+1}-m${dstMatchIdx}-${(i%2===0)?'p1':'p2'}`;
-          const dSlot = document.getElementById(dstSlotId);
-          const d = (dSlot || dst).getBoundingClientRect();
+              const dstSlotId = `tr_slot-r${r + 1}-m${dstMatchIdx}-${(i % 2 === 0) ? 'p1' : 'p2'}`;
+              const dSlot = document.getElementById(dstSlotId);
+              const d = (dSlot || dst).getBoundingClientRect();
 
-          const x1 = sA.right - wrapRect.left;
-          const y1 = sA.top + sA.height/2 - wrapRect.top;
-          const x2 = d.left - wrapRect.left;
-          const y2 = d.top + d.height/2 - wrapRect.top;
-          const pad = Math.min(52, Math.abs(x2-x1)/2.5);
+              const x1 = sA.right - wrapRect.left;
+              const y1 = sA.top + sA.height / 2 - wrapRect.top;
+              const x2 = d.left - wrapRect.left;
+              const y2 = d.top + d.height / 2 - wrapRect.top;
+              const pad = Math.min(52, Math.abs(x2 - x1) / 2.5);
 
-          const path = document.createElementNS('http://www.w3.org/2000/svg','path');
-          path.setAttribute('d', `M ${x1} ${y1} H ${x1+pad} V ${y2} H ${x2}`);
-          path.setAttribute('class', 'wire' + ((match.winner && match.winner!=='BYE') ? ' won' : ''));
-          bracketLines.appendChild(path);
+              const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+              path.setAttribute('d', `M ${x1} ${y1} H ${x1 + pad} V ${y2} H ${x2}`);
+              path.setAttribute('class', 'wire' + ((match.winner && match.winner !== 'BYE') ? ' won' : ''));
+              bracketLines.appendChild(path);
 
-          const idealY = ((sA.top + sA.height/2) + (sB.top + sB.height/2))/2 - wrapRect.top;
-          const elbowX = x1 + pad;
-          const hasWinner = !!(match.winner && match.winner!=='BYE');
-          const cap = document.createElementNS('http://www.w3.org/2000/svg','path');
-          cap.setAttribute('d', hasWinner ? `M ${elbowX} ${idealY} H ${elbowX-14}` : `M ${elbowX} ${idealY} H ${elbowX+14}`);
-          cap.setAttribute('class', 'wire wire-cap' + (hasWinner ? ' won' : ''));
-          bracketLines.appendChild(cap);
-        });
-      }
-      animateNextDraw=false;
+              const idealY = ((sA.top + sA.height / 2) + (sB.top + sB.height / 2)) / 2 - wrapRect.top;
+              const elbowX = x1 + pad;
+              const hasWinner = !!(match.winner && match.winner !== 'BYE');
+              const cap = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+              cap.setAttribute('d', hasWinner ? `M ${elbowX} ${idealY} H ${elbowX - 14}` : `M ${elbowX} ${idealY} H ${elbowX + 14}`);
+              cap.setAttribute('class', 'wire wire-cap' + (hasWinner ? ' won' : ''));
+              bracketLines.appendChild(cap);
+            });
+          }
+          animateNextDraw = false;
+        }
+
+        function updateFades() {
+          const left = document.querySelector('#tr_torneo .fade-left');
+          const right = document.querySelector('#tr_torneo .fade-right');
+          const max = bracketScroll.scrollWidth - bracketScroll.clientWidth;
+          if (max <= 2) { left.style.opacity = 0; right.style.opacity = 0; return; }
+          const atStart = bracketScroll.scrollLeft <= 2;
+          const atEnd = bracketScroll.scrollLeft >= max - 2;
+          left.style.opacity = atStart ? 0 : 1;
+          right.style.opacity = atEnd ? 0 : 1;
+        }
+
+        // Eventos
+        const onResize = () => { alignMatchesToMidpoints(); drawConnections(); drawWheel(); updateFades(); };
+        const onScroll = () => { drawConnections(); updateFades(); };
+        window.addEventListener('resize', onResize);
+        bracketScroll.addEventListener('scroll', onScroll);
+
+        const onGen = () => { generateBracket(); flash('Cuadro generado.'); updateFades(); };
+        const onResetBracket = () => { bracketRounds = []; bracketCols.innerHTML = ''; bracketLines.innerHTML = ''; championBox.innerHTML = ''; updateFades(); };
+        const onEditToggle = () => { editMode = editModeChk.checked; renderBracket(); };
+        const onSpin = () => spin();
+        const onAddClick = () => onAdd();
+        const onAddEnter = e => { if (e.key === 'Enter') onAdd(); };
+        const onResetPeople = () => { players = DEFAULT_PLAYERS.slice(); savePlayers(); refreshPeople(); drawWheel(); flash('Participantes restaurados.'); };
+        const onClearPeople = () => { players = []; savePlayers(); refreshPeople(); drawWheel(); };
+
+        genBracketBtn.addEventListener('click', onGen);
+        resetBracketBtn.addEventListener('click', onResetBracket);
+        editModeChk.addEventListener('change', onEditToggle);
+        spinBtn.addEventListener('click', onSpin);
+        addBtn.addEventListener('click', onAddClick);
+        newNameEl.addEventListener('keyup', onAddEnter);
+        resetBtn.addEventListener('click', onResetPeople);
+        clearBtn.addEventListener('click', onClearPeople);
+
+        function escapeHtml(s) { return s ? s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#039;' }[m])) : ''; }
+
+        // Init
+        function init() { refreshPeople(); drawWheel(); updateFades(); }
+        init();
+
+        // Cleanup al desmontar la ruta
+        return () => {
+          window.removeEventListener('resize', onResize);
+          bracketScroll.removeEventListener('scroll', onScroll);
+          genBracketBtn.removeEventListener('click', onGen);
+          resetBracketBtn.removeEventListener('click', onResetBracket);
+          editModeChk.removeEventListener('change', onEditToggle);
+          spinBtn.removeEventListener('click', onSpin);
+          addBtn.removeEventListener('click', onAddClick);
+          newNameEl.removeEventListener('keyup', onAddEnter);
+          resetBtn.removeEventListener('click', onResetPeople);
+          clearBtn.removeEventListener('click', onClearPeople);
+        };
+      }, []);
+
+      return (
+        <div id="tr_torneo" className="torneo-root">
+          <main className="space-y-8">
+            {/* Controles + Bracket */}
+            <section className="space-y-2">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <h2 className="font-extrabold text-lg">Mapa de rondas</h2>
+                <div className="flex items-center gap-2">
+                  <button id="tr_genBracketBtn" className="px-4 py-2 rounded-xl bg-[#2a75bb] text-white hover:opacity-90">Aleatorio</button>
+                  <button id="tr_resetBracketBtn" className="px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-50 text-gray-800">Limpiar</button>
+                  <label className="ml-1 inline-flex items-center gap-2 text-sm text-gray-700 select-none">
+                    <input id="tr_editModeChk" type="checkbox" className="h-4 w-4 rounded border-gray-300 text-[#2a75bb] focus:ring-[#2a75bb]" />
+                    Modo manual
+                  </label>
+                </div>
+              </div>
+              <p className="text-gray-500 text-sm">Clic en un slot para marcar ganador. BYEs automáticos.</p>
+
+              <div className="bracket-wrap">
+                <div className="fade-edge fade-left" aria-hidden="true"></div>
+                <div className="fade-edge fade-right" aria-hidden="true"></div>
+                <svg className="tr_bracketLines" id="tr_bracketLines" aria-hidden="true"></svg>
+                <div id="tr_bracketScroll" className="bracket-scroll">
+                  <div id="tr_bracketCols" className="flex gap-6"></div>
+                </div>
+              </div>
+
+              <div id="tr_championBox" className="text-green-700 font-semibold"></div>
+            </section>
+
+            {/* Participantes + Ruleta */}
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Participantes */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">Participantes</h3>
+                  <div className="text-gray-500 text-sm">Activos: <b id="tr_activeCount">0</b></div>
+                </div>
+
+                <div className="flex gap-2 my-3">
+                  <input id="tr_newName" type="text" placeholder="Añadir participante" className="flex-1 rounded-xl border border-gray-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2a75bb]" />
+                  <button id="tr_addBtn" className="px-4 py-2 rounded-xl bg-[#2a75bb] text-white hover:opacity-90">Añadir</button>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <button id="tr_resetBtn" className="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm">Restaurar 6 iniciales</button>
+                  <button id="tr_clearBtn" className="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm">Vaciar</button>
+                </div>
+
+                <div id="tr_chipZone" className="flex flex-wrap gap-2 mb-3"></div>
+                <div id="tr_nameList" className="space-y-2"></div>
+              </div>
+
+              {/* Ruleta */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-4">
+                <h3 className="font-semibold">Ruleta aleatoria</h3>
+                <div className="relative flex justify-center my-3">
+                  <canvas id="tr_wheel" width="420" height="420"></canvas>
+                </div>
+                <div className="grid gap-2">
+                  <button id="tr_spinBtn" className="px-4 py-2 rounded-xl bg-[#2a75bb] text-white hover:opacity-90">Girar</button>
+                  <p className="text-gray-500 text-sm">A la derecha será el ganador.</p>
+                </div>
+                <hr className="my-3 border-gray-200" />
+                <p className="text-gray-500 text-sm mb-1">Elegidos recientes:</p>
+                <div id="tr_recentTags" className="flex flex-wrap gap-2"></div>
+              </div>
+            </section>
+          </main>
+
+          {/* Toast */}
+          <div id="tr_toast" className="fixed top-4 left-1/2 -translate-x-1/2 hidden">
+            <div className="bubble px-4 py-2 rounded-xl bg-gray-900 text-white shadow-xl text-sm" id="tr_toastBody">Hecho</div>
+          </div>
+        </div>
+      );
     }
-
-    function updateFades(){
-      const left = document.querySelector('#tr_torneo .fade-left');
-      const right = document.querySelector('#tr_torneo .fade-right');
-      const max = bracketScroll.scrollWidth - bracketScroll.clientWidth;
-      if(max <= 2){ left.style.opacity=0; right.style.opacity=0; return; }
-      const atStart = bracketScroll.scrollLeft <= 2;
-      const atEnd = bracketScroll.scrollLeft >= max-2;
-      left.style.opacity = atStart ? 0 : 1;
-      right.style.opacity = atEnd ? 0 : 1;
-    }
-
-    // Eventos
-    const onResize = ()=>{ alignMatchesToMidpoints(); drawConnections(); drawWheel(); updateFades(); };
-    const onScroll = ()=>{ drawConnections(); updateFades(); };
-    window.addEventListener('resize', onResize);
-    bracketScroll.addEventListener('scroll', onScroll);
-
-    const onGen = ()=>{ generateBracket(); flash('Cuadro generado.'); updateFades(); };
-    const onResetBracket = ()=>{ bracketRounds=[]; bracketCols.innerHTML=''; bracketLines.innerHTML=''; championBox.innerHTML=''; updateFades(); };
-    const onEditToggle = ()=>{ editMode = editModeChk.checked; renderBracket(); };
-    const onSpin = ()=> spin();
-    const onAddClick = ()=> onAdd();
-    const onAddEnter = e=>{ if(e.key==='Enter') onAdd(); };
-    const onResetPeople = ()=>{ players=DEFAULT_PLAYERS.slice(); savePlayers(); refreshPeople(); drawWheel(); flash('Participantes restaurados.'); };
-    const onClearPeople = ()=>{ players=[]; savePlayers(); refreshPeople(); drawWheel(); };
-
-    genBracketBtn.addEventListener('click', onGen);
-    resetBracketBtn.addEventListener('click', onResetBracket);
-    editModeChk.addEventListener('change', onEditToggle);
-    spinBtn.addEventListener('click', onSpin);
-    addBtn.addEventListener('click', onAddClick);
-    newNameEl.addEventListener('keyup', onAddEnter);
-    resetBtn.addEventListener('click', onResetPeople);
-    clearBtn.addEventListener('click', onClearPeople);
-
-    function escapeHtml(s){ return s ? s.replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#039;'}[m])) : ''; }
-
-    // Init
-    function init(){ refreshPeople(); drawWheel(); updateFades(); }
-    init();
-
-    // Cleanup al desmontar la ruta
-    return () => {
-      window.removeEventListener('resize', onResize);
-      bracketScroll.removeEventListener('scroll', onScroll);
-      genBracketBtn.removeEventListener('click', onGen);
-      resetBracketBtn.removeEventListener('click', onResetBracket);
-      editModeChk.removeEventListener('change', onEditToggle);
-      spinBtn.removeEventListener('click', onSpin);
-      addBtn.removeEventListener('click', onAddClick);
-      newNameEl.removeEventListener('keyup', onAddEnter);
-      resetBtn.removeEventListener('click', onResetPeople);
-      clearBtn.removeEventListener('click', onClearPeople);
-    };
-  }, []);
-
-  return (
-    <div id="tr_torneo" className="torneo-root">
-      <main className="space-y-8">
-        {/* Controles + Bracket */}
-        <section className="space-y-2">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <h2 className="font-extrabold text-lg">Mapa de rondas</h2>
-            <div className="flex items-center gap-2">
-              <button id="tr_genBracketBtn" className="px-4 py-2 rounded-xl bg-[#2a75bb] text-white hover:opacity-90">Aleatorio</button>
-              <button id="tr_resetBracketBtn" className="px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-50 text-gray-800">Limpiar</button>
-              <label className="ml-1 inline-flex items-center gap-2 text-sm text-gray-700 select-none">
-                <input id="tr_editModeChk" type="checkbox" className="h-4 w-4 rounded border-gray-300 text-[#2a75bb] focus:ring-[#2a75bb]" />
-                Modo manual
-              </label>
-            </div>
-          </div>
-          <p className="text-gray-500 text-sm">Clic en un slot para marcar ganador. BYEs automáticos.</p>
-
-          <div className="bracket-wrap">
-            <div className="fade-edge fade-left" aria-hidden="true"></div>
-            <div className="fade-edge fade-right" aria-hidden="true"></div>
-            <svg className="tr_bracketLines" id="tr_bracketLines" aria-hidden="true"></svg>
-            <div id="tr_bracketScroll" className="bracket-scroll">
-              <div id="tr_bracketCols" className="flex gap-6"></div>
-            </div>
-          </div>
-
-          <div id="tr_championBox" className="text-green-700 font-semibold"></div>
-        </section>
-
-        {/* Participantes + Ruleta */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Participantes */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">Participantes</h3>
-              <div className="text-gray-500 text-sm">Activos: <b id="tr_activeCount">0</b></div>
-            </div>
-
-            <div className="flex gap-2 my-3">
-              <input id="tr_newName" type="text" placeholder="Añadir participante" className="flex-1 rounded-xl border border-gray-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2a75bb]" />
-              <button id="tr_addBtn" className="px-4 py-2 rounded-xl bg-[#2a75bb] text-white hover:opacity-90">Añadir</button>
-            </div>
-
-            <div className="flex flex-wrap gap-2 mb-3">
-              <button id="tr_resetBtn" className="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm">Restaurar 6 iniciales</button>
-              <button id="tr_clearBtn" className="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm">Vaciar</button>
-            </div>
-
-            <div id="tr_chipZone" className="flex flex-wrap gap-2 mb-3"></div>
-            <div id="tr_nameList" className="space-y-2"></div>
-          </div>
-
-          {/* Ruleta */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4">
-            <h3 className="font-semibold">Ruleta aleatoria</h3>
-            <div className="relative flex justify-center my-3">
-              <canvas id="tr_wheel" width="420" height="420"></canvas>
-            </div>
-            <div className="grid gap-2">
-              <button id="tr_spinBtn" className="px-4 py-2 rounded-xl bg-[#2a75bb] text-white hover:opacity-90">Girar</button>
-              <p className="text-gray-500 text-sm">A la derecha será el ganador.</p>
-            </div>
-            <hr className="my-3 border-gray-200" />
-            <p className="text-gray-500 text-sm mb-1">Elegidos recientes:</p>
-            <div id="tr_recentTags" className="flex flex-wrap gap-2"></div>
-          </div>
-        </section>
-      </main>
-
-      {/* Toast */}
-      <div id="tr_toast" className="fixed top-4 left-1/2 -translate-x-1/2 hidden">
-        <div className="bubble px-4 py-2 rounded-xl bg-gray-900 text-white shadow-xl text-sm" id="tr_toastBody">Hecho</div>
-      </div>
-    </div>
-  );
-}
 
 
     /* -------------------- Mount -------------------- */
