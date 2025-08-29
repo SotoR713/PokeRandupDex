@@ -921,6 +921,7 @@
 
     /* ======================= TORNEO (adaptado como ruta) ======================= */
     /* ======================= TORNEO (sin hero ni modo oscuro, look Pokédex) ======================= */
+/* ======================= TORNEO (sin hero ni modo oscuro, look Pokédex) ======================= */
 function Torneo() {
   // Estilos propios del torneo (ligeros y en la línea de la Pokédex)
   useEffect(() => {
@@ -955,7 +956,7 @@ function Torneo() {
 .col-title{ position: sticky; top:-8px; z-index:3; background:linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,0)); border-bottom:1px dashed var(--line); padding-bottom:.25rem; margin-bottom:.55rem; }
 
 /* Conexiones */
-svg.tr_bracketLines{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; y-index:1; }
+svg.tr_bracketLines{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1; } /* <- corregido */
 .wire{ fill:none; stroke:var(--wire); stroke-width:4; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:7 10; }
 .wire.won{ stroke:var(--wire-strong); stroke-width:4.5; stroke-dasharray:none; }
 .wire-cap{ stroke-width:3.5; }
@@ -963,7 +964,6 @@ svg.tr_bracketLines{ position:absolute; inset:0; width:100%; height:100%; pointe
 /* Chips + ruleta */
 .chip{ display:inline-flex; align-items:center; gap:.45rem; background:#f8fafc; color:#0f172a; border:1px solid var(--line); border-radius:999px; padding:.35rem .65rem; font-weight:600; font-size:.9rem; }
 canvas{ max-width:100%; height:auto; }
-.pointer{ width:0; height:0; border-left:12px solid transparent; border-right:12px solid transparent; border-bottom:18px solid #f59e0b; position:absolute; top:-2px; left:100%; transform:translateX(-50%); }
 
 /* Fades laterales */
 .fade-edge{ position:absolute; top:0; bottom:0; width:42px; z-index:4; pointer-events:none; opacity:1; transition: opacity .2s ease; }
@@ -975,6 +975,9 @@ canvas{ max-width:100%; height:auto; }
 .bracket-scroll::-webkit-scrollbar{ height:10px; }
 .bracket-scroll::-webkit-scrollbar-track{ background:transparent; }
 .bracket-scroll::-webkit-scrollbar-thumb{ background: #e5e7eb; border-radius:999px; }
+
+/* Toast */
+#tr_toast .bubble{ box-shadow:0 10px 30px rgba(2,6,23,.25); }
     `;
     document.head.appendChild(style);
     return () => { style.remove(); };
@@ -1026,6 +1029,130 @@ canvas{ max-width:100%; height:auto; }
     }
     function savePlayers(){ localStorage.setItem(LS_KEY, JSON.stringify(players)); }
     function getActivePlayers(){ return players.filter(p=>p.active).map(p=>p.name); }
+
+    /* 🎊 Confeti minimalista (canvas + requestAnimationFrame) */
+    function confettiBurst({
+      x = innerWidth / 2,
+      y = innerHeight / 4,
+      particles = 140,
+      spread = 90,
+      decay = 0.89,
+      scalar = 1
+    } = {}) {
+      const c = document.createElement('canvas');
+      Object.assign(c.style, {
+        position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: 9999
+      });
+      document.body.appendChild(c);
+      const g = c.getContext('2d');
+      const resize = () => { c.width = innerWidth; c.height = innerHeight; };
+      resize();
+      const toRad = Math.PI / 180;
+      const colors = ['#ffcb05', '#2a75bb', '#f59e0b', '#10b981', '#ef4444', '#3b82f6'];
+      const parts = Array.from({ length: particles }, () => ({
+        x, y,
+        angle: (-spread / 2) + Math.random() * spread,
+        v: 8 + Math.random() * 6,
+        size: (4 + Math.random() * 6) * scalar,
+        rot: Math.random() * 360,
+        rotSpd: (Math.random() * 20 - 10),
+        color: colors[(Math.random() * colors.length) | 0],
+        alpha: 1
+      }));
+      const gravity = 0.25, drag = 0.005;
+      function frame() {
+        g.clearRect(0, 0, c.width, c.height);
+        for (let i = parts.length - 1; i >= 0; i--) {
+          const p = parts[i];
+          p.v *= 1 - drag;
+          p.x += Math.cos(p.angle * toRad) * p.v;
+          p.y += Math.sin(p.angle * toRad) * p.v + gravity;
+          p.rot += p.rotSpd;
+          p.alpha *= decay;
+          if (p.alpha <= 0.02 || p.y > c.height + 20) { parts.splice(i, 1); continue; }
+          g.save();
+          g.globalAlpha = p.alpha;
+          g.translate(p.x, p.y);
+          g.rotate(p.rot * toRad);
+          g.fillStyle = p.color;
+          g.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+          g.restore();
+        }
+        if (parts.length) requestAnimationFrame(frame);
+        else c.remove();
+      }
+      requestAnimationFrame(frame);
+      addEventListener('resize', resize, { once: true });
+    }
+
+    /* 🎊 Lluvia de confeti: cae desde arriba, mucha cantidad y piezas grandes */
+function confettiRain({
+  x0 = 0,                 // desde qué X (viewport)
+  x1 = innerWidth,        // hasta qué X (viewport)
+  y0 = -40,               // arranque por encima del viewport
+  count = 900,            // MUCHO confeti
+  sizeMin = 10,           // piezas grandes
+  sizeMax = 24,
+  gravity = 0.45,         // caída rápida
+  wind = 0.9,             // deriva horizontal
+  decay = 0.996           // vida de las piezas
+} = {}) {
+  const c = document.createElement('canvas');
+  Object.assign(c.style, {
+    position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: 9999
+  });
+  document.body.appendChild(c);
+  const g = c.getContext('2d');
+
+  const resize = () => { c.width = innerWidth; c.height = innerHeight; };
+  resize();
+
+  const colors = ['#ffcb05','#2a75bb','#f59e0b','#10b981','#ef4444','#a855f7','#3b82f6','#fb7185'];
+  const toRad = Math.PI/180;
+
+  const parts = Array.from({ length: count }, () => {
+    const w = sizeMin + Math.random()*(sizeMax - sizeMin);
+    return {
+      x: x0 + Math.random()*(x1 - x0),
+      y: y0 - Math.random()*120,
+      vx: (Math.random()*2 - 1) * wind,   // deriva a izquierda/derecha
+      vy: 2 + Math.random()*3,
+      size: w,
+      rot: Math.random()*360,
+      rotSpd: (Math.random()*8 - 4),
+      color: colors[(Math.random()*colors.length)|0],
+      alpha: 1
+    };
+  });
+
+  function frame() {
+    g.clearRect(0,0,c.width,c.height);
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i];
+      p.vy += gravity * 0.5;
+      p.x  += p.vx + Math.sin((p.y + p.rot) * 0.02) * 0.6; // leve serpenteo
+      p.y  += p.vy;
+      p.rot += p.rotSpd;
+      p.alpha *= decay;
+
+      if (p.y > c.height + 40 || p.alpha < 0.03) { parts.splice(i,1); continue; }
+
+      g.save();
+      g.globalAlpha = p.alpha;
+      g.translate(p.x, p.y);
+      g.rotate(p.rot * toRad);
+      g.fillStyle = p.color;
+      // rectángulos “papelitos”
+      g.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.55);
+      g.restore();
+    }
+    if (parts.length) requestAnimationFrame(frame);
+    else c.remove();
+  }
+  requestAnimationFrame(frame);
+  addEventListener('resize', resize, { once: true });
+}
+
 
     /* Participantes */
     function renderChips(){
@@ -1099,8 +1226,23 @@ canvas{ max-width:100%; height:auto; }
       const normalized=(2*Math.PI-(wheelRotation%(2*Math.PI)))%(2*Math.PI);
       let idx=Math.floor(normalized/arc); if(idx<0) idx=0; if(idx>=names.length) idx=names.length-1;
       const picked=names[idx]; recent.unshift(picked); if(recent.length>8) recent.pop();
-      recentTags.innerHTML=''; recent.forEach(n=>{ const s=document.createElement('span'); s.className='px-2 py-0.5 rounded-lg bg-gray-100 border border-gray-300 text-gray-700 text-sm'; s.textContent=n; recentTags.appendChild(s); });
+      recentTags.innerHTML='';
+      recent.forEach(n=>{
+        const s=document.createElement('span');
+        s.className='px-2 py-0.5 rounded-lg bg-gray-100 border border-gray-300 text-gray-700 text-sm';
+        s.textContent=n; recentTags.appendChild(s);
+      });
       flash('Seleccionado: '+picked);
+
+      // 🎊 Confeti a la derecha del canvas (como tu UI indica)
+      const r = wheelCanvas.getBoundingClientRect();
+      confettiBurst({
+        x: r.right - 8,
+        y: r.top + r.height / 2,
+        particles: 160,
+        spread: 120,
+        scalar: 1.1
+      });
     }
 
     /* Bracket */
@@ -1268,14 +1410,53 @@ canvas{ max-width:100%; height:auto; }
       championBox.innerHTML='';
     }
 
-    function updateChampion(){
-      const last=bracketRounds[bracketRounds.length-1];
-      if(!last) return;
-      const f=last[0];
-      championBox.innerHTML = (f && f.winner && f.winner!=='BYE')
-        ? `<div class="mt-2 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-green-200 text-green-700">🏆 <span><b>Campeón:</b> ${escapeHtml(f.winner)}</span></div>`
-        : '';
-    }
+  function updateChampion(){
+  const last = bracketRounds[bracketRounds.length - 1];
+  if(!last) return;
+  const f = last[0];
+  const hasChamp = (f && f.winner && f.winner !== 'BYE');
+
+  championBox.innerHTML = hasChamp
+    ? `<div class="mt-2 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-green-200 text-green-700">
+         🏆 <span><b>Campeón:</b> ${escapeHtml(f.winner)}</span>
+       </div>`
+    : '';
+
+  if (hasChamp) {
+    // 📍 área del cartel de campeón (llueve por encima de esa zona)
+    const box = championBox.getBoundingClientRect();
+
+    // Oleada 1: muy densa y piezas grandes
+    confettiRain({
+      x0: Math.max(0, box.left - 80),
+      x1: Math.min(innerWidth, box.right + 80),
+      y0: -40,
+      count: 950,
+      sizeMin: 12,
+      sizeMax: 26,
+      gravity: 0.48,
+      wind: 1.0,
+      decay: 0.996
+    });
+
+    // Oleada 2 (ligero retardo): refuerzo para que “llueva más”
+    setTimeout(() => {
+      confettiRain({
+        x0: Math.max(0, box.left - 140),
+        x1: Math.min(innerWidth, box.right + 140),
+        y0: -60,
+        count: 700,
+        sizeMin: 10,
+        sizeMax: 22,
+        gravity: 0.46,
+        wind: 0.9,
+        decay: 0.997
+      });
+    }, 260);
+  }
+}
+
+
 
     function drawConnections(){
       bracketLines.innerHTML='';
@@ -1381,8 +1562,6 @@ canvas{ max-width:100%; height:auto; }
 
   return (
     <div id="tr_torneo" className="torneo-root">
-
-
       <main className="space-y-8">
         {/* Controles + Bracket */}
         <section className="space-y-2">
@@ -1438,12 +1617,11 @@ canvas{ max-width:100%; height:auto; }
           <div className="bg-white rounded-2xl border border-gray-200 p-4">
             <h3 className="font-semibold">Ruleta aleatoria</h3>
             <div className="relative flex justify-center my-3">
-              
               <canvas id="tr_wheel" width="420" height="420"></canvas>
             </div>
             <div className="grid gap-2">
               <button id="tr_spinBtn" className="px-4 py-2 rounded-xl bg-[#2a75bb] text-white hover:opacity-90">Girar</button>
-              <p className="text-gray-500 text-sm">A la derecha sera el ganador.</p>
+              <p className="text-gray-500 text-sm">A la derecha será el ganador.</p>
             </div>
             <hr className="my-3 border-gray-200" />
             <p className="text-gray-500 text-sm mb-1">Elegidos recientes:</p>
